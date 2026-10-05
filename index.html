@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v99</title>
+<title>RyckTrader v100</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v99</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v100</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1444,8 +1444,10 @@ function gateSig(sid, bars, ev){
   const use=(typeof closedBars==="function"?closedBars(bars):null)||bars;
   if(!use||use.length<12) return {dir:null,conf:0,why:"Sem contexto"};
   const greensRun=runColor(use,true), redsRun=runColor(use,false);
-  if(ev.dir==="CALL" && greensRun>=3) return {dir:null,conf:0,why:"Compra atrasada. Já tem 3 verdes. Sem entrada."};
-  if(ev.dir==="PUT" && redsRun>=3) return {dir:null,conf:0,why:"Venda atrasada. Já tem 3 vermelhas. Sem entrada."};
+  const last4=use.slice(-4);
+  const g4=last4.filter(b=>b.c>b.o).length, r4=last4.filter(b=>b.c<b.o).length;
+  if(ev.dir==="CALL" && (greensRun>=2 || g4>=3)) return {dir:null,conf:0,why:"Compra atrasada. Já passou da segunda vela. Sem entrada."};
+  if(ev.dir==="PUT" && (redsRun>=2 || r4>=3)) return {dir:null,conf:0,why:"Venda atrasada. Já passou da segunda vela. Sem entrada."};
   const last=use.at(-1);
   const w=use.slice(-14,-1);
   const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
