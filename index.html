@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v102</title>
+<title>RyckTrader v103</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v102</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v103</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -867,7 +867,7 @@ const STRATS=[
  {id:"ari",name:"ARI Fluxo 100",short:"ARI Fluxo",desc:"Seta no fluxo da vela. A entrada é NESTA mesma vela.",how:"MA3 / MA7 / MA100 + cor da vela atual. Seta no fluxo: entra CALL ou PUT na vela que está rodando agora — não espera a próxima.",call:"Fluxo de alta (MA3>MA7) e vela de compra. Entra CALL nesta vela.",put:"Fluxo de baixa (MA3<MA7) e vela de venda. Entra PUT nesta vela."},
  {id:"snip",name:"Sniper Outside Bar",short:"Sniper",desc:"Duas velas a favor, outside contrário e retomada.",how:"Padrão de 4 velas do script ARI (SNIPER-CALL2 / PUT2).",call:"Duas altas + outside de baixa + vela atual de alta.",put:"Duas baixas + outside de alta + vela atual de baixa."},
  {id:"mega",name:"Mega Fluxo ARI (MACD + EMA13)",short:"Mega Fluxo",desc:"EMA 13 e histograma MACD acelerando no mesmo lado.",how:"CALL se EMA13 sobe e o histograma MACD sobe. PUT o inverso.",call:"EMA13 e MACD histograma mais altos que a vela anterior.",put:"EMA13 e MACD histograma mais baixos que a vela anterior."},
- {id:"mira",name:"Miracle",short:"Miracle",desc:"Seta no suporte/resistência. A seta marca a vela fechada; a entrada é a próxima.",how:"Níveis verdes de S/R + EMA. Seta azul no fundo = CALL na próxima. Seta amarela no topo = PUT na próxima.",call:"Seta azul no suporte. Entra CALL na abertura da próxima vela.",put:"Seta amarela na resistência. Entra PUT na abertura da próxima vela."},
+ {id:,name:"Miracle",short:"Miracle",desc:"Seta no suporte/resistência. A seta marca a vela fechada; a entrada é a próxima.",how:"Níveis verdes de S/R + EMA. Seta azul no fundo = CALL na próxima. Seta amarela no topo = PUT na próxima.",call:"Seta azul no suporte. Entra CALL na abertura da próxima vela.",put:"Seta amarela na resistência. Entra PUT na abertura da próxima vela."},
  {id:"pin",name:"Pin Bar / Pavio",short:"Pin Bar",desc:"Pavio longo rejeitando o extremo.",how:"Pavio ≥ 2× o corpo, fechamento no terço oposto.",call:"Martelo no fundo.",put:"Estrela cadente no topo."},
  {id:"inb",name:"Inside Bar Break",short:"Inside Bar",desc:"Vela dentro da anterior e fechamento de rompimento.",how:"Inside + fecha fora da mãe.",call:"Fecha acima da máxima da mãe.",put:"Fecha abaixo da mínima da mãe."},
  {id:"stoch",name:"Estocástico 14,3,3",short:"Estocástico",desc:"Saída de oversold/overbought.",how:"%K cruza %D fora de 20/80.",call:"Cruzamento para cima abaixo de 25.",put:"Cruzamento para baixo acima de 75."},
@@ -1656,13 +1656,14 @@ function candlePadrao(bars){
   return {dir:null,conf:0,why:"Nenhum padrão da figura nesta vela."};
 }
 
+ if(id==="mira"||id==="ari"||id==="snip"||id==="mega") return {dir:null,conf:0,why:"Estratégia de seta removida."};
  if(id==="pad"){
   return candlePadrao(bars);
  }
  if(id==="srx"){
   return structureM1(bars);
  }
- if(id==="mira"){
+ if(id===){
   return miracleArrow(bars);
  }
 
@@ -2361,7 +2362,7 @@ function pickStratSig(a,bars,m5){
   if(!bars||bars.length<20) return {dir:null,conf:0,sname:"—",why:"Sem velas",n:0};
   const want=ST.strat||"auto";
   let best=null, n=0;
-  const list=want==="auto"?STRATS.filter(s=>!INDIC_IDS[s.id]):STRATS.filter(s=>s.id===want);
+  const list=want==="auto"?STRATS.filter(s=>!INDIC_IDS[s.id]&&!["mira","ari","snip","mega"].includes(s.id)):STRATS.filter(s=>s.id===want&&!["mira","ari","snip","mega"].includes(s.id));
   for(const s of list){
     const ev=evalS(s.id,bars);
     if(ev&&ev.dir){
@@ -2529,11 +2530,11 @@ function flowTape(bars,n=10){
 function proPick(bars,m1,m5){
   const b1=m1&&m1.length>=20?m1:bars;
   if(!b1||b1.length<8) return {dir:null,conf:0,why:"Sem velas"};
-  const ids=[["mira","Miracle"],["ari","ARI Fluxo"],["pull","Pullback"],["pa","S/R"],["eng","Engolfo"],["pin","Pin Bar"],["bos","BOS"],["ob","Order Block"],["fvg","FVG"],["brt","Break Retest"],["liq","Liquidez"],["mss","MSS"],["snip","Sniper"],["mega","Mega Fluxo"],["star","Estrela"],["cnt_sol","Soldados"]];
+  const ids=[["Miracle"],["ari","ARI Fluxo"],["pull","Pullback"],["pa","S/R"],["eng","Engolfo"],["pin","Pin Bar"],["bos","BOS"],["ob","Order Block"],["fvg","FVG"],["brt","Break Retest"],["liq","Liquidez"],["mss","MSS"],["snip","Sniper"],["mega","Mega Fluxo"],["star","Estrela"],["cnt_sol","Soldados"]];
   let best=null;
   ids.forEach(x=>{
     try{
-      const ev=x[0]==="mira"?miracleArrow(closedBars(b1)):x[0]==="ari"?ariFluxo(b1):evalS(x[0],b1);
+      const ev=x[0]===?miracleArrow(closedBars(b1)):x[0]==="ari"?ariFluxo(b1):evalS(x[0],b1);
       if(!ev||!ev.dir) return;
       const pack=Object.assign({sname:x[1],sid:x[0],same:x[0]==="ari"?1:!!ev.same},ev);
       if(!best || (pack.conf||0)>(best.conf||0)) best=pack;
@@ -2722,7 +2723,7 @@ function sinais(){
   const box=$("aiSig")||$("pg-sinais");
   if(!box) return;
   if(ST._entryOpen && Date.now()<ST._holdUntil && box.querySelector("#sigArea")) return;
-  box.innerHTML="<div class='robo-wrap'><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div class='tfsw' id='tfFilt'><button data-t='60' class='"+(ST.tf!=="300"?"on":"")+"'>1 minuto</button><button data-t='300' class='"+(ST.tf==="300"?"on":"")+"'>5 minutos</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
+  box.innerHTML="<div class='robo-wrap'><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div class='tfsw' id='tfFilt'><button data-t='60' class='"+(ST.tf!=="300"?"on":"")+"'>1 minuto</button><button data-t='300' class='"+(ST.tf==="300"?"on":"")+"'>5 minutos</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.filter(x=>!["mira","ari","snip","mega"].includes(x.id)).map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
   fillVoices();
   document.querySelectorAll("#tfFilt button").forEach(b=>b.onclick=()=>{
     ST.tf=b.dataset.t;
@@ -2828,7 +2829,7 @@ async function runSig(){
     uni=uni.slice(ST._pairRot).concat(uni.slice(0, ST._pairRot));
     ST._pairRot=(ST._pairRot+7)%uni.length;
   }
-  const BEST_OPS=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri","mira"];
+  const BEST_OPS=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri"];
   ST._rot=ST._rot||0;
   ST._lastSids=ST._lastSids||[];
   const ops=want==="auto" ? BEST_OPS.slice() : [want];
@@ -2849,7 +2850,7 @@ async function runSig(){
     try{
       const live=(ST._scanRaw&&ST._scanRaw[ST._scanAid])||bars;
       if(sid==="ari") return ariFluxo(live&&live.length?live:bars);
-      if(sid==="mira") return miracleArrow(closedBars(bars));
+      if(sid===) return miracleArrow(closedBars(bars));
       return evalS(sid,closedBars(bars)||bars);
     }catch(e){ return {dir:null,conf:0}; }
   }
@@ -2861,12 +2862,12 @@ async function runSig(){
     const r=(rsi(use.map(b=>b.c)).at(-1)||50);
     const body=Math.abs(last.c-last.o)/Math.max(last.h-last.l,1e-12);
     if(body<0.28) return {dir:null};
-    const skipMira=(ST._lastSids||[]).indexOf("mira")>=0;
+    const skipMira=(ST._lastSids||[]).indexOf()>=0;
     try{ const ari=ariFluxo(use); if(ari&&ari.dir&&ari.conf>=86) return Object.assign({sid:"ari"},ari); }catch(e){}
     try{ const eng=evalS("eng", use); if(eng&&eng.dir) return Object.assign({sid:"eng",sname:"Engolfo"},eng); }catch(e){}
     try{ const pin=evalS("pin", use); if(pin&&pin.dir) return Object.assign({sid:"pin",sname:"Pin Bar"},pin); }catch(e){}
     if(!skipMira){
-      try{ const mira=miracleArrow(closedBars(use)); if(mira&&mira.dir&&mira.conf>=90) return Object.assign({sid:"mira"},mira); }catch(e){}
+      try{ const mira=miracleArrow(closedBars(use)); if(mira&&mira.dir&&mira.conf>=90) return Object.assign({sid:},mira); }catch(e){}
     }
     return {dir:null};
   }
@@ -2917,7 +2918,7 @@ async function runSig(){
       if(ev.dir==="CALL" && !bull) continue;
       if(ev.dir==="PUT" && last.c>prev.c) continue;
       if(ev.dir==="CALL" && last.c<prev.c) continue;
-      if(sid==="mira" && (ST._lastSids||[]).indexOf("mira")>=0) continue;
+      if(sid=== && (ST._lastSids||[]).indexOf()>=0) continue;
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
       const same=sid==="ari"||!!ev.same;
@@ -4051,7 +4052,7 @@ function sayStrat(s){
   const raw=String(s||"").trim();
   const map={
     "ARI Fluxo":"Ári Fluxo","ari":"Ári Fluxo","ARI":"Ári Fluxo",
-    "Miracle":"Miracle","mira":"Miracle",
+    "Miracle":"Miracle",:"Miracle",
     "Desk":"confluência do desk","Fluxo":"fluxo da tendência",
     "Chinesa":"estratégia chinesa","Sniper":"Sniper",
     "Vela-a-Vela":"vela a vela","VAV":"vela a vela",
