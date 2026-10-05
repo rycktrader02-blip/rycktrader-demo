@@ -867,7 +867,6 @@ const STRATS=[
  {id:"ari",name:"ARI Fluxo 100",short:"ARI Fluxo",desc:"Seta no fluxo da vela. A entrada é NESTA mesma vela.",how:"MA3 / MA7 / MA100 + cor da vela atual. Seta no fluxo: entra CALL ou PUT na vela que está rodando agora — não espera a próxima.",call:"Fluxo de alta (MA3>MA7) e vela de compra. Entra CALL nesta vela.",put:"Fluxo de baixa (MA3<MA7) e vela de venda. Entra PUT nesta vela."},
  {id:"snip",name:"Sniper Outside Bar",short:"Sniper",desc:"Duas velas a favor, outside contrário e retomada.",how:"Padrão de 4 velas do script ARI (SNIPER-CALL2 / PUT2).",call:"Duas altas + outside de baixa + vela atual de alta.",put:"Duas baixas + outside de alta + vela atual de baixa."},
  {id:"mega",name:"Mega Fluxo ARI (MACD + EMA13)",short:"Mega Fluxo",desc:"EMA 13 e histograma MACD acelerando no mesmo lado.",how:"CALL se EMA13 sobe e o histograma MACD sobe. PUT o inverso.",call:"EMA13 e MACD histograma mais altos que a vela anterior.",put:"EMA13 e MACD histograma mais baixos que a vela anterior."},
- {id:,name:"Miracle",short:"Miracle",desc:"Seta no suporte/resistência. A seta marca a vela fechada; a entrada é a próxima.",how:"Níveis verdes de S/R + EMA. Seta azul no fundo = CALL na próxima. Seta amarela no topo = PUT na próxima.",call:"Seta azul no suporte. Entra CALL na abertura da próxima vela.",put:"Seta amarela na resistência. Entra PUT na abertura da próxima vela."},
  {id:"pin",name:"Pin Bar / Pavio",short:"Pin Bar",desc:"Pavio longo rejeitando o extremo.",how:"Pavio ≥ 2× o corpo, fechamento no terço oposto.",call:"Martelo no fundo.",put:"Estrela cadente no topo."},
  {id:"inb",name:"Inside Bar Break",short:"Inside Bar",desc:"Vela dentro da anterior e fechamento de rompimento.",how:"Inside + fecha fora da mãe.",call:"Fecha acima da máxima da mãe.",put:"Fecha abaixo da mínima da mãe."},
  {id:"stoch",name:"Estocástico 14,3,3",short:"Estocástico",desc:"Saída de oversold/overbought.",how:"%K cruza %D fora de 20/80.",call:"Cruzamento para cima abaixo de 25.",put:"Cruzamento para baixo acima de 75."},
@@ -1663,9 +1662,7 @@ function candlePadrao(bars){
  if(id==="srx"){
   return structureM1(bars);
  }
- if(id===){
-  return miracleArrow(bars);
- }
+ 
 
 
  if(id==="pin"){
@@ -2850,7 +2847,7 @@ async function runSig(){
     try{
       const live=(ST._scanRaw&&ST._scanRaw[ST._scanAid])||bars;
       if(sid==="ari") return ariFluxo(live&&live.length?live:bars);
-      if(sid===) return miracleArrow(closedBars(bars));
+      
       return evalS(sid,closedBars(bars)||bars);
     }catch(e){ return {dir:null,conf:0}; }
   }
