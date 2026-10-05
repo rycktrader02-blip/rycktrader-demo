@@ -2864,7 +2864,7 @@ async function runSig(){
     try{ const eng=evalS("eng", use); if(eng&&eng.dir) return Object.assign({sid:"eng",sname:"Engolfo"},eng); }catch(e){}
     try{ const pin=evalS("pin", use); if(pin&&pin.dir) return Object.assign({sid:"pin",sname:"Pin Bar"},pin); }catch(e){}
     if(!skipMira){
-      try{ const mira=miracleArrow(closedBars(use)); if(mira&&mira.dir&&mira.conf>=90) return Object.assign({sid:},mira); }catch(e){}
+      
     }
     return {dir:null};
   }
