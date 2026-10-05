@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v105</title>
+<title>RyckTrader v106</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v105</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v106</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2940,25 +2940,31 @@ async function runSig(){
   const tfCode=g===300?"300":"60";
   const waitTo=ms=>new Promise(r=>setTimeout(r,ms));
   const withT=(p,ms)=>Promise.race([p.catch(()=>[]), waitTo(ms).then(()=>[])]);
-  const batch=16;
-  for(let i=0;i<uni.length;i+=batch){
-    const slice=uni.slice(i,i+batch);
-    const pg=$("scanProg"); if(pg) pg.textContent="Pares "+(i+1)+"–"+Math.min(i+batch,uni.length)+" de "+uni.length;
-    const got=await Promise.all(slice.map(async a=>{
-      ST._barCache=ST._barCache||{};
-      const ck=a.id+"|"+g, hit=ST._barCache[ck];
-      const raw=hit&&Date.now()-hit.ts<20000?hit.raw:await withT(candles(a.id,g), 450);
-      if(raw&&raw.length) ST._barCache[ck]={ts:Date.now(),raw};
-      return {a,raw:raw||[],bars:closedBars(raw)};
-    }));
-    for(const row of got){
-      ST._scanRaw=ST._scanRaw||{};
-      ST._scanRaw[row.a.id]=row.raw&&row.raw.length?row.raw:row.bars;
-      ST._scanAid=row.a.id;
-      scorePair(row.a, row.raw&&row.raw.length?row.raw:row.bars, tfCode);
-    }
-    if(scanGen!==(ST._scanGen||0)) return;
+  ST._barCache=ST._barCache||{};
+  function take(a, raw){
+    if(!raw||!raw.length) return;
+    ST._barCache[a.id+"|"+g]={ts:Date.now(),raw};
+    ST._scanRaw=ST._scanRaw||{};
+    ST._scanRaw[a.id]=raw;
+    ST._scanAid=a.id;
+    scorePair(a, raw, tfCode);
+  }
+  for(const a of uni){
+    const hit=ST._barCache[a.id+"|"+g];
+    if(hit&&hit.raw&&hit.raw.length) take(a, hit.raw);
     if(best) break;
+  }
+  if(!best){
+    ST._seek=(ST._seek||0)%uni.length;
+    const slice=[];
+    for(let n=0;n<6 && n<uni.length;n++) slice.push(uni[(ST._seek+n)%uni.length]);
+    ST._seek=(ST._seek+6)%uni.length;
+    const pg=$("scanProg"); if(pg) pg.textContent="Buscando "+slice.map(a=>a.name).join(", ");
+    const got=await Promise.all(slice.map(async a=>{
+      const raw=await withT(candles(a.id,g), 250);
+      return {a,raw:raw||[]};
+    }));
+    for(const row of got){ take(row.a, row.raw); if(best) break; }
   }
   if(scanGen!==(ST._scanGen||0)){ area.dataset.busy=""; ST._scanLock=0; return; }
   if(best && scanAll){ ST.asset=best.a; ST._seenKey=seenKey(best.a,best.dir,best.tf||"60"); try{ if(typeof tickLive==="function") tickLive(); }catch(e){} }
@@ -2988,7 +2994,7 @@ async function runSig(){
     else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>Nenhuma vela fechada passou no filtro. Não inventa par nem preço. Próxima checagem em 3 segundos.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 2500);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 1500);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
