@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v68</title>
+<title>RyckTrader v69</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -430,7 +430,7 @@ h1,.brand b,.bigdir{font-family:Sora,Inter,sans-serif!important;letter-spacing:-
 .pat-tag{font-weight:700;letter-spacing:.04em}
 .pat-tag.call{color:#22c55e}
 .pat-tag.put{color:#ef4444}
-.robo-face,.robo-mouth{display:none!important}
+.robo-mouth{display:none!important}
 
 .robo-wrap{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:2px 0 8px}
 .robo-stage{position:relative;width:104px;height:112px;flex-shrink:0;animation:roboIdle 2.2s ease-in-out infinite}
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v68</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v69</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2580,8 +2580,9 @@ function sinais(){
     ST._scanGen=(ST._scanGen||0)+1;
     document.querySelectorAll("#mktFilt button").forEach(x=>x.classList.toggle("on",x===b));
     document.querySelectorAll("#aiMkt button").forEach(x=>x.classList.toggle("on",x.getAttribute("data-m")===ST.deskMkt));
-    const live=ST._holdUntil && Date.now()<ST._holdUntil && ST._pinAsset;
-    if(!live){ ST._scanLock=0; ST._holdUntil=0; setTimeout(()=>{ try{ runSig(); }catch(e){} }, 200); }
+    const live=ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil);
+    if(live){ roboSay("Entrada aberta. Espera a vela acabar.", false); return; }
+    ST._scanLock=0; ST._holdUntil=0; setTimeout(()=>{ try{ runSig(); }catch(e){} }, 200);
   });
   if($("selS")) $("selS").onchange=e=>{ST.strat=e.target.value;};
   if($("btnSig")) $("btnSig").onclick=()=>{
@@ -2676,6 +2677,10 @@ async function runSig(){
   const ops=want==="auto" ? [rotOps[0]] : [want];
   const focusSid=ops[0];
   const opLab=((STRATS.find(s=>s.id===focusSid)||{}).short||focusSid);
+  if(ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil)){
+    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
+    area.dataset.busy=""; ST._scanLock=0; return;
+  }
   if(!(ST._saidAt && Date.now()-ST._saidAt<70000)) roboSay("Lendo pares. Estratégia: "+opLab+".",false);
   area.innerHTML="<div class='muted'>ESTRATÉGIA · "+opLab+"</div><p class='muted' id='scanProg'>Procuro o par onde essa leitura está válida agora.</p>";
   let best=null, usedBars=null, hits=[];
@@ -2816,7 +2821,7 @@ async function runSig(){
     ST._rot=(ST._rot+1)%Math.max(1,BEST_OPS.length);
   }
   const fala=speakSig(best.dir,best.a.name,best.why,"1 minuto",best.sname||best.sid||"Desk");
-    if(fala) roboSay(fala,true);
+    const bubble=$("roboSay"); if(bubble && fala) bubble.textContent=fala;
     ST.asset=best.a; ST._lastId=best.a.id; ST._speakNow=false;
     try{ openBrokerPair(best.a, best.dir); }catch(e){}
     ST._usedIds=(ST._usedIds||[]).filter(x=>x!==best.a.id).concat([best.a.id]);
@@ -3735,7 +3740,7 @@ function sayPar(name){
     ["AUD/JPY","australiano iene"],["CAD/JPY","canadense iene"],["CHF/JPY","franco iene"],
     ["EUR/AUD","euro australiano"],["EUR/CAD","euro canadense"],["EUR/CHF","euro franco"],
     ["EUR/NZD","euro neozelandês"],["NZD/JPY","neozelandês iene"],["USD/HKD","dólar hong kong"],
-    ["GBP/AUD","libra australiano"],["AUD/CAD","australiano canadense"],["AUD/CHF","australiano franco"],
+    ["GBP/AUD","libra australiano"],["AUD/NZD","australiano neozelandês"],["GBP/NZD","libra neozelandês"],["AUD/CAD","australiano canadense"],["AUD/CHF","australiano franco"],
     ["USD/AUD","dólar australiano"],["USDAUD","dólar australiano"],["BTC-USD","bitcoin"],["ETH-USD","ethereum"],["ADA-USD","cardano"],["BNB-USD","bnb"],["XRP-USD","xrp"],["SOL-USD","solana"],["DOGE-USD","dogecoin"],["SUI-USD","sui"],["Cardano","cardano"],["Dogecoin","dogecoin"],["Solana","solana"],["Sui","sui"]
   ];
   map.sort((a,b)=>b[0].length-a[0].length);
