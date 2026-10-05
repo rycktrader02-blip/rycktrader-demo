@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v93</title>
+<title>RyckTrader v94</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v93</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v94</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1424,10 +1424,21 @@ function deskGate(bars, ev, m1, m5){
 }
 
 
+function runColor(bars, up){
+  let n=0;
+  for(let i=bars.length-1;i>=0;i--){
+    const b=bars[i];
+    if(up?b.c>b.o:b.c<b.o) n++; else break;
+  }
+  return n;
+}
 function gateSig(sid, bars, ev){
   if(!ev||!ev.dir) return ev||{dir:null,conf:0};
   const use=(typeof closedBars==="function"?closedBars(bars):null)||bars;
   if(!use||use.length<12) return {dir:null,conf:0,why:"Sem contexto"};
+  const greensRun=runColor(use,true), redsRun=runColor(use,false);
+  if(ev.dir==="CALL" && greensRun>=3) return {dir:null,conf:0,why:"Compra atrasada. Já tem 3 verdes. Sem entrada."};
+  if(ev.dir==="PUT" && redsRun>=3) return {dir:null,conf:0,why:"Venda atrasada. Já tem 3 vermelhas. Sem entrada."};
   const last=use.at(-1);
   const w=use.slice(-14,-1);
   const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
@@ -1452,8 +1463,10 @@ function gateSig(sid, bars, ev){
     return ev;
   }
   if(CONT[sid]){
-    const ok=(ev.dir==="CALL"&&tnd.f>0)||(ev.dir==="PUT"&&tnd.f<0);
-    if(!ok) return {dir:null,conf:0,why:"Contra o fluxo. Sem entrada."};
+    const prev3=use.slice(-4,-1);
+    const pullCall=tnd.f>0&&greensRun<=2&&prev3.some(b=>b.c<b.o);
+    const pullPut=tnd.f<0&&redsRun<=2&&prev3.some(b=>b.c>b.o);
+    if(!(ev.dir==="CALL"?pullCall:pullPut)) return {dir:null,conf:0,why:"Fluxo sem pullback. Sem perseguir vela."};
     ev.conf=Math.min(93,(ev.conf||80)+2);
     return ev;
   }
@@ -2727,7 +2740,10 @@ async function runSig(){
         const use=closedBars(bars)||bars;
         const tnd=trend(use)||{f:0};
         const lastC=use.at(-1), prevC=use.at(-2);
-        const flow=(tnd.f>0&&lastC.c>lastC.o)||(tnd.f<0&&lastC.c<lastC.o);
+        const gRun=(function(){let n=0; for(let i=use.length-1;i>=0&&use[i].c>use[i].o;i--) n++; return n;})();
+        const rRun=(function(){let n=0; for(let i=use.length-1;i>=0&&use[i].c<use[i].o;i--) n++; return n;})();
+        const prev3=use.slice(-4,-1);
+        const flow=(tnd.f>0&&lastC.c>lastC.o&&gRun<=2&&prev3.some(b=>b.c<b.o))||(tnd.f<0&&lastC.c<lastC.o&&rRun<=2&&prev3.some(b=>b.c>b.o));
         const w=use.slice(-14,-1);
         const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
         const span=Math.max(hi-lo,1e-12);
