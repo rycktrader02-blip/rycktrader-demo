@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v72</title>
+<title>RyckTrader v73</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v72</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v73</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2683,8 +2683,7 @@ async function runSig(){
     if(ST._holdHtml) area.innerHTML=ST._holdHtml;
     area.dataset.busy=""; ST._scanLock=0; return;
   }
-  if(!(ST._saidAt && Date.now()-ST._saidAt<70000)) roboSay("Lendo pares. Estratégia: "+opLab+".",false);
-  area.innerHTML="<div class='muted'>ESTRATÉGIA · "+opLab+"</div><p class='muted' id='scanProg'>Procuro o par onde essa leitura está válida agora.</p>";
+  if(ST._entryOpen){ if(ST._holdHtml) area.innerHTML=ST._holdHtml; area.dataset.busy=""; ST._scanLock=0; return; }
   let best=null, usedBars=null, hits=[];
   function seenKey(a,dir,tf){
       const step=60;
@@ -2822,8 +2821,12 @@ async function runSig(){
     ST._lastSids=(ST._lastSids||[]).concat([best.sid||""]).slice(-4);
     ST._rot=(ST._rot+1)%Math.max(1,BEST_OPS.length);
   }
-  const fala=speakSig(best.dir,pairName(best.a),best.why,"1 minuto",best.sname||best.sid||"Desk");
-    const bubble=$("roboSay"); if(bubble && fala) bubble.textContent=fala;
+  const parFalado=pairName(best.a);
+    const ladoFalado=best.dir==="CALL"?"Compra":"Venda";
+    const fala=ladoFalado+". "+parFalado.replace("/"," ")+". Próxima vela.";
+    const bubble=$("roboSay"); if(bubble) bubble.textContent=fala;
+    ST._freezeSay=fala; ST._spokenHold=true; ST._entryOpen=true;
+    try{ if(window.speechSynthesis){ speechSynthesis.cancel(); ST._speaking=false; speakNow(fala); } }catch(e){}
     ST.asset=best.a; ST._lastId=best.a.id; ST._speakNow=false;
     try{ openBrokerPair(best.a, best.dir); }catch(e){}
     ST._usedIds=(ST._usedIds||[]).filter(x=>x!==best.a.id).concat([best.a.id]);
@@ -2864,7 +2867,7 @@ async function runSig(){
       }
     }
   },400);
- }catch(e){ area.innerHTML="<p class='muted'>Feed: "+e.message+"</p>"; }
+ }catch(e){ if(!ST._entryOpen) area.innerHTML="<p class='muted'>Feed: "+e.message+"</p>"; }
  area.dataset.busy=""; ST._scanLock=0;
 }
 
