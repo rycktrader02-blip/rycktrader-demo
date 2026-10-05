@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v90</title>
+<title>RyckTrader v91</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v90</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v91</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2813,14 +2813,18 @@ async function runSig(){
   const abre=new Date(closeAt*1000);
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
-    const pool=(uni&&uni.length)?uni:ASSETS.filter(a=>a.src===mkt);
-    const a=pool[(ST._pairRot||0)%Math.max(1,pool.length)]||ASSETS[0];
-    const bars=synthBars(a.id, +ST.tf||60, 48);
-    const last=bars.at(-1);
-    const dir=last.c>=last.o?"CALL":"PUT";
-    best={a:a, dir:dir, sid:focusSid, sname:opLab, why:"Vela fechada valida "+opLab+" neste par.", conf:86, tf:String(ST.tf||"60"), touch:last.c};
-    usedBars=bars;
+    if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>Nenhuma vela fechada passou no filtro. Não inventa par nem preço. Próxima checagem no fechamento.</p>";
+    area.dataset.busy=""; ST._scanLock=0; return;
   }
+  const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
+  const nm=String(best.a&&best.a.name||"");
+  const bandOk=(nm==="NZD/USD"?livePx>0.4&&livePx<0.85:nm==="EUR/USD"?livePx>0.9&&livePx<1.35:nm==="GBP/USD"?livePx>1.05&&livePx<1.55:/JPY$/.test(nm)?livePx>50:nm==="Ethereum"?livePx>100:nm==="XRP"?livePx>0.2&&livePx<8:livePx>0);
+  if(!bandOk){
+    if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
+    area.dataset.busy=""; ST._scanLock=0; return;
+  }
+  best.touch=livePx;
   const vs=volState(usedBars);
   if(false && ST.volOn!==false && !vs.ok){
     const falta=Math.max(0,Math.floor(closeAt-Date.now()/1000));
