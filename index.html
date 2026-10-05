@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v98</title>
+<title>RyckTrader v99</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v98</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v99</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1456,6 +1456,12 @@ function gateSig(sid, bars, ev){
   const r=(rsi(use.map(b=>b.c)).at(-1)||50);
   const REV={eng:1,pin:1,star:1,tw:1,rev_doji:1,rev_inv:1,rev_sht:1,rev_tmp:1,rev_kck:1,vav_mrt:1,vav_enf:1,vav_har:1,vav_prc:1,div:1,pa:1,liq:1,drg:1,grv:1,abd:1,hs:1,ihs:1,fky:1,meet:1,ctk:1,dark:1,prc:1,spin:1,tin:1,hmr:1,hng:1,rail:1};
   const CONT={cnt_sol:1,cnt_3m:1,cnt_gap:1,cnt_50:1,cnt_box:1,ari:1,mega:1,snip:1,pull:1,bos:1,ob:1,fvg:1,brt:1,mss:1,vav_imp:1,vav_dst:1,flag:1,tri:1,tout:1,belt:1,tls:1,wdg:1,mira:1};
+  if(sid==="bos"){
+    const ww=use.slice(-16,-1);
+    const shi=Math.max.apply(null,ww.map(b=>b.h)), slo=Math.min.apply(null,ww.map(b=>b.l));
+    if(ev.dir==="PUT" && last.c>=slo) return {dir:null,conf:0,why:"Baixa recuperada. Sem venda."};
+    if(ev.dir==="CALL" && last.c<=shi) return {dir:null,conf:0,why:"Alta recuperada. Sem compra."};
+  }
   if(REV[sid]){
     const seq=use.slice(-6);
     const greens=seq.filter(b=>b.c>b.o).length;
@@ -1799,9 +1805,15 @@ function evalSraw(id,bars){
   const sl=bars.slice(-16,-1);
   if(sl.length<8) return{dir:null,conf:0,why:"BOS aquecendo"};
   const sh=Math.max(...sl.map(b=>b.h)), slw=Math.min(...sl.map(b=>b.l));
-  if(last.c>sh && last.c>last.o) return{dir:"CALL",conf:86,why:"Quebra de estrutura de alta. Entrada CALL na próxima vela.",touch:sh};
-  if(last.c<slw && last.c<last.o) return{dir:"PUT",conf:86,why:"Quebra de estrutura de baixa. Entrada PUT na próxima vela.",touch:slw};
-  return{dir:null,conf:0,why:"Estrutura ainda vigente. Sem BOS."};
+  const prev=bars.at(-2);
+  const body=Math.abs(last.c-last.o);
+  const rng=Math.max(last.h-last.l,1e-12);
+  const held=body>rng*0.5;
+  const upStruct=bars.slice(-6).filter(b=>b.c>b.o).length>=4;
+  const dnStruct=bars.slice(-6).filter(b=>b.c<b.o).length>=4;
+  if(last.c>sh && last.c>last.o && last.c>prev.c && held && !dnStruct) return{dir:"CALL",conf:88,why:"Quebra de estrutura de alta. Fechou acima e segurou.",touch:sh};
+  if(last.c<slw && last.c<last.o && last.c<prev.c && held && !upStruct) return{dir:"PUT",conf:88,why:"Quebra de estrutura de baixa. Fechou abaixo e segurou.",touch:slw};
+  return{dir:null,conf:0,why:"Quebra recuperada ou sem corpo. Sem BOS."};
  }
  if(id==="ob"){
   if(bars.length<8) return{dir:null,conf:0,why:"Order block aquecendo"};
