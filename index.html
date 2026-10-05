@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v89</title>
+<title>RyckTrader v90</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v89</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v90</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1439,10 +1439,17 @@ function gateSig(sid, bars, ev){
   const REV={eng:1,pin:1,star:1,tw:1,rev_doji:1,rev_inv:1,rev_sht:1,rev_tmp:1,rev_kck:1,vav_mrt:1,vav_enf:1,vav_har:1,vav_prc:1,div:1,pa:1,liq:1,drg:1,grv:1,abd:1,hs:1,ihs:1,fky:1,meet:1,ctk:1,dark:1,prc:1,spin:1,tin:1,hmr:1,hng:1,rail:1};
   const CONT={cnt_sol:1,cnt_3m:1,cnt_gap:1,cnt_50:1,cnt_box:1,ari:1,mega:1,snip:1,pull:1,bos:1,ob:1,fvg:1,brt:1,mss:1,vav_imp:1,vav_dst:1,flag:1,tri:1,tout:1,belt:1,tls:1,wdg:1,mira:1};
   if(REV[sid]){
-    const ok=(ev.dir==="CALL"&&atBot&&r<50)||(ev.dir==="PUT"&&atTop&&r>50);
-    if(!ok) return {dir:null,conf:0,why:"Padrão fora do extremo. Sem entrada."};
-    ev.conf=Math.min(94,(ev.conf||80)+(r<36||r>64?4:1));
-    ev.why=(ev.why||"")+" Filtro: extremo + RSI "+Math.round(r)+".";
+    const seq=use.slice(-6);
+    const greens=seq.filter(b=>b.c>b.o).length;
+    const reds=seq.filter(b=>b.c<b.o).length;
+    const impulseUp=greens>=4||tnd.f>0;
+    const impulseDn=reds>=4||tnd.f<0;
+    const bear=last.c<last.o&&last.c<use.at(-2).c;
+    const bull=last.c>last.o&&last.c>use.at(-2).c;
+    const ok=(ev.dir==="CALL"&&atBot&&r<=42&&bull&&!impulseDn)||(ev.dir==="PUT"&&atTop&&r>=68&&bear&&!impulseUp);
+    if(!ok) return {dir:null,conf:0,why:"Contra a estrutura ou sem vela fechada. Sem entrada."};
+    ev.conf=Math.min(94,(ev.conf||80)+4);
+    ev.why=(ev.why||"")+" Filtro: vela fechada a favor da estrutura. RSI "+Math.round(r)+".";
     return ev;
   }
   if(CONT[sid]){
