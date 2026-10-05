@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v71</title>
+<title>RyckTrader v72</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v71</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v72</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2635,12 +2635,13 @@ async function apiConfirm(a,dir){
 
 async function runSig(){
  const area=$("sigArea"); if(!area) return;
- if(ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil)){
+ if(ST._entryOpen || ST._speaking || (ST._holdUntil && Date.now()<ST._holdUntil)){
    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
    return;
  }
  if(ST._scanLock) return;
  ST._scanLock=1;
+ ST._scanGen=(ST._scanGen||0)+1;
  area.dataset.busy="1";
  try{
   const want=ST.strat||"auto";
@@ -3957,10 +3958,10 @@ setInterval(()=>{
   const p=$("pg-sinais")||$("aiSig");
   if(!p) return;
   if(ST.panelTab && ST.panelTab!=="sinais") return;
+  if(ST._entryOpen || ST._scanLock || ST._speaking) return;
   if(ST._holdUntil && Date.now()<ST._holdUntil) return;
-  ST._scanLock=0;
   runSig();
-}, 1000);
+}, 8000);
 }
 
 
