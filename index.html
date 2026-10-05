@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v70</title>
+<title>RyckTrader v71</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -432,8 +432,8 @@ h1,.brand b,.bigdir{font-family:Sora,Inter,sans-serif!important;letter-spacing:-
 .pat-tag.put{color:#ef4444}
 .robo-mouth{display:none!important}
 
-.robo-wrap{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:2px 0 8px}
-.robo-stage{position:relative;width:104px;height:112px;flex-shrink:0;animation:roboIdle 2.2s ease-in-out infinite}
+.robo-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:4px auto 8px;width:100%}
+.robo-stage{position:relative;width:104px;height:112px;margin:0 auto;flex-shrink:0;animation:roboIdle 2.2s ease-in-out infinite}
 .robo, .robo-face{
   width:104px;height:112px;flex-shrink:0;position:relative;
   object-fit:contain;background:transparent;border-radius:0;box-shadow:none;
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v70</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v71</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2568,6 +2568,7 @@ function sinais(){
   ST.strat=ST.strat||"auto";
   const box=$("aiSig")||$("pg-sinais");
   if(!box) return;
+  if(ST._entryOpen && Date.now()<ST._holdUntil && box.querySelector("#sigArea")) return;
   box.innerHTML="<div class='robo-wrap'><div class='robo-stage' id='roboStage'><img class='robo-face' id='robo' src='"+ROBO_SRC+"' alt=''/></div><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div class='tfsw' id='tfFilt'><button data-t='60' class='"+(ST.tf!=="300"?"on":"")+"'>1 minuto</button><button data-t='300' class='"+(ST.tf==="300"?"on":"")+"'>5 minutos</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
   fillVoices();
   document.querySelectorAll("#tfFilt button").forEach(b=>b.onclick=()=>{
@@ -2769,7 +2770,7 @@ async function runSig(){
       scorePair(row.a, row.raw&&row.raw.length?row.raw:row.bars, tfCode);
     }
     if(scanGen!==(ST._scanGen||0)) return;
-    if(best && i>=24) break;
+    if(best) break;
   }
   if(scanGen!==(ST._scanGen||0)){ area.dataset.busy=""; ST._scanLock=0; return; }
   if(best && scanAll){ ST.asset=best.a; ST._seenKey=seenKey(best.a,best.dir,best.tf||"60"); try{ if(typeof tickLive==="function") tickLive(); }catch(e){} }
@@ -3855,22 +3856,19 @@ function sayStrat(s){
 }
 function speakSig(dir,name,why,exp,strat){
   if(ST._entryOpen && ST._spokenHold) return "";
-  if(ST.panelTab!=="sinais") return;
-  if(ST.voice===false) return;
+  if(ST.panelTab!=="sinais") return "";
+  if(ST.voice===false) return "";
   const lado=dir==="CALL"?"compra":dir==="PUT"?"venda":"";
-  if(!lado) return;
-  const par=sayPar(name);
+  if(!lado) return "";
+  const par=String(name||"").replace(/\//g," ").replace(/-/g," ").trim();
   const key=lado+"|"+par;
   const now=Date.now();
   if(ST._saidKey===key && now-(ST._saidAt||0)<90000) return;
   ST._saidKey=key;
   ST._saidAt=now; ST._spokenHold=true;
   const estrategia=sayStrat(strat||"");
-  const opens=["Entrada de "+lado+" no "+par+".","Agora "+lado+" em "+par+".",lado.charAt(0).toUpperCase()+lado.slice(1)+" no "+par+".","Sinal de "+lado+", "+par+"."];
-  ST._sayN=(ST._sayN||0)+1;
-  const open=opens[ST._sayN%opens.length];
   const quando=/ari|ári/i.test(String(strat||"")+" "+String(why||""))?" Mesma vela.":" Próxima vela.";
-  const txt=open+" "+estrategia+"."+quando;
+  const txt=lado.charAt(0).toUpperCase()+lado.slice(1)+". "+par+". "+quando;
   ST._pendingSpeak=txt;
   if(window.speechSynthesis){ try{ speechSynthesis.cancel(); }catch(e){} ST._speaking=false; speakNow(txt); }
   return txt;
