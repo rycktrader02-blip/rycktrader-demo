@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v92</title>
+<title>RyckTrader v93</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v92</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v93</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1449,18 +1449,16 @@ function gateSig(sid, bars, ev){
     const ok=(ev.dir==="CALL"&&atBot&&r<=42&&bull&&!impulseDn)||(ev.dir==="PUT"&&atTop&&r>=68&&bear&&!impulseUp);
     if(!ok) return {dir:null,conf:0,why:"Contra a estrutura ou sem vela fechada. Sem entrada."};
     ev.conf=Math.min(94,(ev.conf||80)+4);
-    ev.why=(ev.why||"")+" Filtro: vela fechada a favor da estrutura. RSI "+Math.round(r)+".";
     return ev;
   }
   if(CONT[sid]){
     const ok=(ev.dir==="CALL"&&tnd.f>0)||(ev.dir==="PUT"&&tnd.f<0);
     if(!ok) return {dir:null,conf:0,why:"Contra o fluxo. Sem entrada."};
     ev.conf=Math.min(93,(ev.conf||80)+2);
-    ev.why=(ev.why||"")+" Filtro: a favor do fluxo.";
     return ev;
   }
   const ok=(ev.dir==="CALL"&&tnd.f>=0)||(ev.dir==="PUT"&&tnd.f<=0);
-  if(!ok||(ev.conf||0)<86) return {dir:null,conf:0,why:"Sem confluência."};
+  if(!ok) return {dir:null,conf:0,why:"Fora da estratégia."};
   return ev;
 }
 
@@ -2723,6 +2721,22 @@ async function runSig(){
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
     for(const sid of ops){
+      const FLOW={ari:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,mira:1,retest:1,liq:1};
+      const REV={pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,dark:1,prc:1,pa:1,tw:1,ttop:1,choc:1,eqsw:1,out:1};
+      if(want==="auto"){
+        const use=closedBars(bars)||bars;
+        const tnd=trend(use)||{f:0};
+        const lastC=use.at(-1), prevC=use.at(-2);
+        const flow=(tnd.f>0&&lastC.c>lastC.o)||(tnd.f<0&&lastC.c<lastC.o);
+        const w=use.slice(-14,-1);
+        const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
+        const span=Math.max(hi-lo,1e-12);
+        const rev=(lastC.h>=hi-span*0.18&&lastC.c<lastC.o)||(lastC.l<=lo+span*0.18&&lastC.c>lastC.o);
+        if(flow&&FLOW[sid]&&!REV[sid]){}
+        else if(!flow&&rev&&REV[sid]){}
+        else continue;
+      }
+
       if(INDIC_IDS[sid]) continue;
       if(ST._firedSid[sid+"|"+slot]) continue;
       if(ST._firedSid[sid+"|"+a.id+"|"+slot]) continue;
