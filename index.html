@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v104</title>
+<title>RyckTrader v105</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v104</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v105</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2874,10 +2874,12 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
-    for(const sid of ops){
+    const fast=["srx","pad","pin","eng","star"];
+    const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
+    for(const sid of order){
       const FLOW={ari:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,mira:1,retest:1,liq:1};
       const REV={srx:1,pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,dark:1,prc:1,pa:1,tw:1,ttop:1,choc:1,eqsw:1,out:1};
-      if(want==="auto"){
+      if(want==="auto" && sid!=="srx" && sid!=="pad"){
         const use=closedBars(bars)||bars;
         const tnd=trend(use)||{f:0};
         const lastC=use.at(-1), prevC=use.at(-2);
@@ -2908,7 +2910,7 @@ async function runSig(){
       if(/JPY$/.test(nm) && px<10) continue;
       ev=gateSig(sid,bars,ev);
       if(!ev||!ev.dir) continue;
-      if((ev.conf||0)<86) continue;
+      if((ev.conf||0)<(sid==="srx"||sid==="pad"?82:86)) continue;
       const bear=last.c<last.o && last.c<=prev.c;
       const bull=last.c>last.o && last.c>=prev.c;
       if(ev.dir==="PUT" && !bear) continue;
@@ -2938,12 +2940,15 @@ async function runSig(){
   const tfCode=g===300?"300":"60";
   const waitTo=ms=>new Promise(r=>setTimeout(r,ms));
   const withT=(p,ms)=>Promise.race([p.catch(()=>[]), waitTo(ms).then(()=>[])]);
-  const batch=8;
+  const batch=16;
   for(let i=0;i<uni.length;i+=batch){
     const slice=uni.slice(i,i+batch);
     const pg=$("scanProg"); if(pg) pg.textContent="Pares "+(i+1)+"–"+Math.min(i+batch,uni.length)+" de "+uni.length;
     const got=await Promise.all(slice.map(async a=>{
-      const raw=await withT(candles(a.id,g), 700);
+      ST._barCache=ST._barCache||{};
+      const ck=a.id+"|"+g, hit=ST._barCache[ck];
+      const raw=hit&&Date.now()-hit.ts<20000?hit.raw:await withT(candles(a.id,g), 450);
+      if(raw&&raw.length) ST._barCache[ck]={ts:Date.now(),raw};
       return {a,raw:raw||[],bars:closedBars(raw)};
     }));
     for(const row of got){
