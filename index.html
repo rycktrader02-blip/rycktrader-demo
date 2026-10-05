@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v74</title>
+<title>RyckTrader v75</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -145,7 +145,7 @@ h1{font-size:20px;font-weight:800}.sub{color:var(--muted);font-size:12px;margin:
 .stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
 .st{background:#141414;border-radius:10px;padding:8px 3px;text-align:center}
 .st span{display:block;font-size:9px;color:var(--muted)}
-.sig{border:1px solid #5a1e1e;border-radius:16px;padding:14px;background:#140a0a}
+.sig{border:1px solid #5a1e1e;border-radius:12px;padding:8px;margin:2px 0 4px;background:#140a0a}
 .sig.call{border-color:#1d5a33;background:#0c1c12}
 .bigdir{font-size:26px;font-weight:800}
 .box{background:#0a0a0a;border-radius:8px;padding:6px 8px;margin-top:4px}
@@ -432,7 +432,7 @@ h1,.brand b,.bigdir{font-family:Sora,Inter,sans-serif!important;letter-spacing:-
 .pat-tag.put{color:#ef4444}
 .robo-mouth{display:none!important}
 
-.robo-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:4px auto 8px;width:100%}
+.robo-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;margin:0 auto 2px;width:100%}
 .robo-stage{position:relative;width:168px;height:198px;margin:0 auto;flex-shrink:0;animation:roboIdle 2.6s ease-in-out infinite}
 .robo, .robo-face{
   width:168px;height:198px;display:block;margin:0 auto;flex-shrink:0;position:relative;
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v74</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v75</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2570,7 +2570,7 @@ function sinais(){
   const box=$("aiSig")||$("pg-sinais");
   if(!box) return;
   if(ST._entryOpen && Date.now()<ST._holdUntil && box.querySelector("#sigArea")) return;
-  box.innerHTML="<div class='robo-wrap'><div class='robo-stage' id='roboStage'><img class='robo-face' id='robo' src='"+ROBO_SRC+"' alt=''/></div><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div class='tfsw' id='tfFilt'><button data-t='60' class='"+(ST.tf!=="300"?"on":"")+"'>1 minuto</button><button data-t='300' class='"+(ST.tf==="300"?"on":"")+"'>5 minutos</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
+  box.innerHTML="<div class='robo-wrap'><div class='robo-stage' id='roboStage'><img class='robo-face' id='robo' src='"+ROBO_SRC+"' alt=''/></div><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div id='sigArea'></div><div class='tfsw' id='tfFilt'><button data-t='60' class='"+(ST.tf!=="300"?"on":"")+"'>1 minuto</button><button data-t='300' class='"+(ST.tf==="300"?"on":"")+"'>5 minutos</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
   fillVoices();
   document.querySelectorAll("#tfFilt button").forEach(b=>b.onclick=()=>{
     ST.tf=b.dataset.t;
