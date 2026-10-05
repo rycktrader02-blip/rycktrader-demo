@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v84</title>
+<title>RyckTrader v85</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v84</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v85</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2847,7 +2847,10 @@ async function runSig(){
     const rsiv=(rsi(usedBars.map(b=>b.c)).at(-1)||50).toFixed(1);
     const vela=lastB.c>=lastB.o?"alta":"baixa";
     const expLab="1 minuto";
-    if(ST._entryOpen && ST._holdHtml){ area.innerHTML=ST._holdHtml; area.dataset.busy=""; ST._scanLock=0; return; }
+    const tfSec=String(best.tf)==="300"?300:60;
+    const nextOpen=(Math.floor(Date.now()/1000/tfSec)+1)*tfSec;
+    const nd=new Date(nextOpen*1000);
+    const nextCandle=String(nd.getHours()).padStart(2,"0")+":"+String(nd.getMinutes()).padStart(2,"0")+":"+String(nd.getSeconds()).padStart(2,"0");
   area.innerHTML="<div class='sig "+(best.dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · "+(best.tf==="300"?"M5":"M1")+"</div><div style='font-size:26px;line-height:1.1;text-align:center;margin:4px 0'>"+pairIcon(best.a)+"</div><div class='muted' style='text-align:center'><b>"+best.a.name+"</b><br>"+best.sname+"</div><div class='bigdir "+(best.dir==="CALL"?"up":"down")+"'>"+(best.dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+fmt(touch,best.a.digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>"+expLab+"</b></div><div class='box'><span>VELA DA ENTRADA</span><b>"+nextCandle+"</b></div><div class='box'><span>PRÓXIMA ENTRADA</span><b id='left'>01:00</b></div><p class='muted'>"+best.why+"</p></div>"
     +"<div class='card'><div class='muted'>MERCADO AGORA</div><div class='trends'><div class='tf'><span>ESTRUTURA</span><b class='"+(td.cls==="up"?"up":"down")+"'>"+td.lab+"</b></div><div class='tf'><span>VELA</span><b>"+vela+"</b></div><div class='tf'><span>RSI</span><b>"+rsiv+"</b></div></div><p class='muted'>Abertura "+fmt(lastB.o,best.a.digits)+" · Máx "+fmt(lastB.h,best.a.digits)+" · Mín "+fmt(lastB.l,best.a.digits)+" · Fecha "+fmt(lastB.c,best.a.digits)+"</p></div>"
 ;
@@ -2865,10 +2868,6 @@ async function runSig(){
     if(say && ST._freezeSay && say.textContent!==ST._freezeSay) say.textContent=ST._freezeSay;
   },300);
   ST.signal={closeAt:Math.floor(ST._holdUntil/1000),dir:best.dir,asset:best.a.id,name:pairName(best.a)};
-  const tfSec=String(best.tf)==="300"?300:60;
-  const nextOpen=(Math.floor(Date.now()/1000/tfSec)+1)*tfSec;
-  const nd=new Date(nextOpen*1000);
-  const nextCandle=String(nd.getHours()).padStart(2,"0")+":"+String(nd.getMinutes()).padStart(2,"0")+":"+String(nd.getSeconds()).padStart(2,"0");
   const left=$("left");
   if(ST._tick) clearInterval(ST._tick);
   ST._tick=setInterval(()=>{
