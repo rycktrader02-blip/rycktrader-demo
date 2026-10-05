@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v91</title>
+<title>RyckTrader v92</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v91</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v92</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2678,12 +2678,7 @@ async function runSig(){
   const BEST_OPS=["pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri","mira"];
   ST._rot=ST._rot||0;
   ST._lastSids=ST._lastSids||[];
-  const banned=new Set(ST._lastSids.slice(-3));
-  let pool=BEST_OPS.filter(s=>!banned.has(s));
-  if(!pool.length) pool=BEST_OPS.filter(s=>s!=="mira");
-  if(!pool.length) pool=BEST_OPS.slice();
-  const rotOps=pool.slice(ST._rot%pool.length).concat(pool.slice(0,ST._rot%pool.length));
-  const ops=want==="auto" ? [rotOps[0]] : [want];
+  const ops=want==="auto" ? BEST_OPS.slice() : [want];
   const focusSid=ops[0];
   const opLab=((STRATS.find(s=>s.id===focusSid)||{}).short||focusSid);
   if(ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil)){
@@ -2742,7 +2737,7 @@ async function runSig(){
       if(/JPY$/.test(nm) && px<10) continue;
       ev=gateSig(sid,bars,ev);
       if(!ev||!ev.dir) continue;
-      if((ev.conf||0)<91) continue;
+      if((ev.conf||0)<86) continue;
       const bear=last.c<last.o && last.c<=prev.c;
       const bull=last.c>last.o && last.c>=prev.c;
       if(ev.dir==="PUT" && !bear) continue;
@@ -2763,7 +2758,7 @@ async function runSig(){
         bars:bars
       };
       hits.push(pack);
-      if(!best || pack._ord<(best._ord||99) || (pack._ord===(best._ord||99) && pack._rank>(best._rank||0))){
+      if(!best || pack._rank>(best._rank||0)){
         best=pack; usedBars=bars;
       }
     }
