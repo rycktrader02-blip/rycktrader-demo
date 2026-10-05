@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v85</title>
+<title>RyckTrader v86</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v85</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v86</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2635,7 +2635,7 @@ async function apiConfirm(a,dir){
 
 async function runSig(){
  const area=$("sigArea"); if(!area) return;
- if(ST._entryOpen || ST._speaking || (ST._holdUntil && Date.now()<ST._holdUntil)){
+ if(ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil)){
    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
    return;
  }
@@ -2831,10 +2831,16 @@ async function runSig(){
     ST._lastSids=(ST._lastSids||[]).concat([best.sid||""]).slice(-4);
     ST._rot=(ST._rot+1)%Math.max(1,BEST_OPS.length);
   }
+  if(ST._holdUntil && Date.now()<ST._holdUntil && ST._holdHtml){
+    area.innerHTML=ST._holdHtml; area.dataset.busy=""; ST._scanLock=0; return;
+  }
+  ST._entryOpen=true;
+  ST._holdUntil=Date.now()+60000;
+  ST._scanGen=(ST._scanGen||0)+1;
   const parFalado=pairName(best.a);
     const ladoFalado=best.dir==="CALL"?"Compra":"Venda";
     const motivo=String(best.sname||best.why||"leitura").replace(/\.$/,"");
-    const fala=ladoFalado+". "+parFalado.replace("/"," ")+". "+motivo+". Próxima vela.";
+    const fala=ladoFalado+". "+parFalado.replace("/"," ")+". "+motivo+". Próxima vela. Próxima entrada em 1 minuto.";
     const bubble=$("roboSay"); if(bubble) bubble.textContent=fala;
     ST._freezeSay=fala; ST._spokenHold=true; ST._entryOpen=true; ST._forceSpeak=true;
     try{ if(window.speechSynthesis){ speechSynthesis.cancel(); ST._speaking=false; speakNow(fala); } }catch(e){}
