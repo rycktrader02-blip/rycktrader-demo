@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v65</title>
+<title>RyckTrader v66</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v65</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v66</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2830,7 +2830,7 @@ async function runSig(){
 ;
   ST._holdHtml=area.innerHTML;
   ST._pinAsset=best.a.id;
-  ST._holdUntil=Math.max(closeAt*1000, Date.now()+20000);
+  ST._holdUntil=Math.max(closeAt*1000, Date.now()+((String(best.tf)==='300')?305000:70000));
   ST.signal={closeAt:Math.floor(ST._holdUntil/1000),dir:best.dir,asset:best.a.id,name:pairName(best.a)};
   const left=$("left");
   if(ST._tick) clearInterval(ST._tick);
@@ -2841,8 +2841,8 @@ async function runSig(){
     if(s<=0){
       clearInterval(ST._tick);
       if(ST.panelTab==="sinais" && ST._autoHunt!==false){
-        ST._holdUntil=0; ST._scanLock=0; ST._pinAsset="";
-        setTimeout(()=>{ try{ runSig(); }catch(e){} }, 400);
+        ST._holdUntil=0; ST._scanLock=0; ST._spokenHold=false;
+        setTimeout(()=>{ if(ST._speaking){ ST._holdUntil=Date.now()+4000; return;} try{ runSig(); }catch(e){} }, 8000);
       }
     }
   },400);
@@ -3784,7 +3784,7 @@ function speakNow(txt){
   if(!window.speechSynthesis) return false;
   const clean=String(txt||"").replace(/\s+/g," ").trim();
   if(!clean) return false;
-  if(ST._speaking){ if(ST._queuedSpeak!==clean) ST._queuedSpeak=clean; return false; }
+  if(ST._speaking || (ST._holdUntil && Date.now()<ST._holdUntil && ST._spokenHold)){ return false; }
   if(ST._lastSpoken===clean && Date.now()-(ST._lastSpokenAt||0)<12000) return true;
   ST._lastSpoken=clean;
   ST._lastSpokenAt=Date.now();
@@ -3838,6 +3838,7 @@ function sayStrat(s){
   return raw.replace(/ARI/gi,"Ári").replace(/S\/R/g,"suporte e resistência")||"confluência";
 }
 function speakSig(dir,name,why,exp,strat){
+  if(ST._holdUntil && Date.now()<ST._holdUntil && ST._spokenHold) return;
   if(ST.panelTab!=="sinais") return;
   if(ST.voice===false) return;
   const lado=dir==="CALL"?"compra":dir==="PUT"?"venda":"";
@@ -3847,7 +3848,7 @@ function speakSig(dir,name,why,exp,strat){
   const now=Date.now();
   if(ST._saidKey===key && now-(ST._saidAt||0)<90000) return;
   ST._saidKey=key;
-  ST._saidAt=now;
+  ST._saidAt=now; ST._spokenHold=true;
   const estrategia=sayStrat(strat||"");
   const opens=["Entrada de "+lado+" no "+par+".","Agora "+lado+" em "+par+".",lado.charAt(0).toUpperCase()+lado.slice(1)+" no "+par+".","Sinal de "+lado+", "+par+"."];
   ST._sayN=(ST._sayN||0)+1;
