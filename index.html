@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v101</title>
+<title>RyckTrader v102</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v101</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v102</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -853,6 +853,7 @@ const ASSETS=[
  {id:"SUI-USD",name:"Sui",ticker:"SUIUSDT",digits:4,src:"crypto"},
 ];
 const STRATS=[
+ {id:"srx",name:"Suporte, resistência, LTA e LTB",short:"S/R LTA LTB",desc:"Suporte, resistência, linha de alta e linha de baixa no M1.",how:"LTA segura no fundo. LTB rejeita no topo. Topo duplo, fundo duplo, OCO e triângulo só na vela fechada.",call:"LTA, suporte ou OCO invertido.",put:"LTB, resistência ou OCO."},
  {id:"pad",name:"Padrões de vela",short:"Padrões de vela",desc:"Martelo, enforcado, estrela, doji, pião, marubozu e cabeça rapada.",how:"Só entra na vela fechada do desenho, no fundo ou no topo.",call:"Martelo, libélula, marubozu de alta no fundo.",put:"Enforcado, estrela cadente, lápide no topo."},
  {id:"bb",name:"Bandas de Bollinger — Toque + Rejeição",short:"Bandas de Bollinger",desc:"Preço bateu no teto ou no chão do canal e foi rejeitado.",how:"Bandas 20 períodos e 2 desvios. Toque com pavio de rejeição = reversão.",call:"Pavio fura a banda inferior e fecha para cima.",put:"Pavio fura a banda superior e fecha para baixo."},
  {id:"eng",name:"Engolfo (Price Action)",short:"Engolfo",desc:"Padrão clássico de reversão.",how:"A vela atual cobre o corpo da anterior e fecha no sentido oposto.",call:"Alta engole a baixa anterior.",put:"Baixa engole a alta anterior."},
@@ -1561,7 +1562,63 @@ function evalSraw(id,bars){
   if(put) return{dir:"PUT",conf:80,why:"Seta MEGA PUT: EMA13 e histograma descendo na vela vermelha.",touch:last.c};
   return{dir:null,conf:0,why:"Sem seta MEGA nesta vela."};
  }
- function candlePadrao(bars){
+ function swingsM1(bars){
+  const pts=[];
+  for(let i=2;i<bars.length-1;i++){
+    const b=bars[i];
+    if(b.h>=bars[i-1].h && b.h>=bars[i-2].h && b.h>=bars[i+1].h) pts.push({i,k:"h",p:b.h});
+    if(b.l<=bars[i-1].l && b.l<=bars[i-2].l && b.l<=bars[i+1].l) pts.push({i,k:"l",p:b.l});
+  }
+  return pts;
+}
+function structureM1(bars){
+  const use=closedBars(bars)||bars;
+  if(!use||use.length<24) return {dir:null,conf:0,why:"M1 sem estrutura"};
+  const last=use.at(-1), prev=use.at(-2);
+  const pts=swingsM1(use.slice(-40));
+  const highs=pts.filter(x=>x.k==="h").slice(-3);
+  const lows=pts.filter(x=>x.k==="l").slice(-3);
+  const bull=last.c>last.o && last.c>prev.c;
+  const bear=last.c<last.o && last.c<prev.c;
+  if(lows.length>=2){
+    const a=lows[lows.length-2], b=lows[lows.length-1];
+    if(b.p>a.p && b.i>a.i){
+      const slope=(b.p-a.p)/Math.max(1,b.i-a.i);
+      const line=b.p+slope*(use.length-1-b.i);
+      if(last.l<=line*1.0015 && last.c>=line && bull) return {dir:"CALL",conf:88,why:"LTA no M1. Fundo ascendente segurou.",sname:"LTA"};
+    }
+    const lo=Math.min(a.p,b.p), hi=Math.max(a.p,b.p);
+    if(Math.abs(a.p-b.p)/Math.max(lo,1e-9)<0.0018 && last.l<=hi*1.0012 && bull) return {dir:"CALL",conf:87,why:"Suporte M1. Fundo duplo segurou.",sname:"Suporte"};
+  }
+  if(highs.length>=2){
+    const a=highs[highs.length-2], b=highs[highs.length-1];
+    if(b.p<a.p && b.i>a.i){
+      const slope=(b.p-a.p)/Math.max(1,b.i-a.i);
+      const line=b.p+slope*(use.length-1-b.i);
+      if(last.h>=line*0.9985 && last.c<=line && bear) return {dir:"PUT",conf:88,why:"LTB no M1. Topo descendente rejeitou.",sname:"LTB"};
+    }
+    const hi=Math.max(a.p,b.p);
+    if(Math.abs(a.p-b.p)/Math.max(hi,1e-9)<0.0018 && last.h>=hi*0.9988 && bear) return {dir:"PUT",conf:87,why:"Resistência M1. Topo duplo rejeitou.",sname:"Resistência"};
+  }
+  if(highs.length>=3 && lows.length>=2){
+    const [l,h,r]=highs.slice(-3);
+    if(h.p>l.p && h.p>r.p && Math.abs(l.p-r.p)/h.p<0.003 && bear && last.c<Math.min(l.p,r.p)) return {dir:"PUT",conf:90,why:"Ombro-cabeça-ombro no M1.",sname:"OCO"};
+  }
+  if(lows.length>=3 && highs.length>=2){
+    const [l,h,r]=lows.slice(-3);
+    if(h.p<l.p && h.p<r.p && Math.abs(l.p-r.p)/Math.max(l.p,1e-9)<0.003 && bull && last.c>Math.max(l.p,r.p)) return {dir:"CALL",conf:90,why:"Ombro-cabeça-ombro invertido no M1.",sname:"OCOI"};
+  }
+  if(highs.length>=2 && lows.length>=2){
+    const rh=highs[highs.length-1].p-highs[highs.length-2].p;
+    const rl=lows[lows.length-1].p-lows[lows.length-2].p;
+    if(Math.abs(rh)/last.c<0.0012 && rl>0 && bull && last.c>highs[highs.length-1].p) return {dir:"CALL",conf:86,why:"Triângulo ascendente. Resistência rompeu.",sname:"Triângulo"};
+    if(Math.abs(rl)/last.c<0.0012 && rh<0 && bear && last.c<lows[lows.length-1].p) return {dir:"PUT",conf:86,why:"Triângulo descendente. Suporte rompeu.",sname:"Triângulo"};
+    if(rh>0 && rl>0 && rh<rl && bear && last.c<lows[lows.length-1].p) return {dir:"PUT",conf:85,why:"Cunha de alta rompeu para baixo.",sname:"Cunha"};
+    if(rh<0 && rl<0 && bear===false && bull && last.c>highs[highs.length-1].p) return {dir:"CALL",conf:85,why:"Cunha de baixa rompeu para cima.",sname:"Cunha"};
+  }
+  return {dir:null,conf:0,why:"Sem LTA, LTB ou S/R fechado."};
+}
+function candlePadrao(bars){
   if(!bars||bars.length<12) return {dir:null,conf:0,why:"Sem contexto do padrão"};
   const use=closedBars(bars)||bars;
   const last=use.at(-1), prev=use.at(-2);
@@ -1601,6 +1658,9 @@ function evalSraw(id,bars){
 
  if(id==="pad"){
   return candlePadrao(bars);
+ }
+ if(id==="srx"){
+  return structureM1(bars);
  }
  if(id==="mira"){
   return miracleArrow(bars);
@@ -2768,7 +2828,7 @@ async function runSig(){
     uni=uni.slice(ST._pairRot).concat(uni.slice(0, ST._pairRot));
     ST._pairRot=(ST._pairRot+7)%uni.length;
   }
-  const BEST_OPS=["pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri","mira"];
+  const BEST_OPS=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri","mira"];
   ST._rot=ST._rot||0;
   ST._lastSids=ST._lastSids||[];
   const ops=want==="auto" ? BEST_OPS.slice() : [want];
@@ -2818,7 +2878,7 @@ async function runSig(){
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
     for(const sid of ops){
       const FLOW={ari:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,mira:1,retest:1,liq:1};
-      const REV={pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,dark:1,prc:1,pa:1,tw:1,ttop:1,choc:1,eqsw:1,out:1};
+      const REV={srx:1,pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,dark:1,prc:1,pa:1,tw:1,ttop:1,choc:1,eqsw:1,out:1};
       if(want==="auto"){
         const use=closedBars(bars)||bars;
         const tnd=trend(use)||{f:0};
