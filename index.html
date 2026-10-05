@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v96</title>
+<title>RyckTrader v97</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v96</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v97</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1466,6 +1466,10 @@ function gateSig(sid, bars, ev){
     const prev3=use.slice(-4,-1);
     const pullCall=tnd.f>0&&greensRun<=2&&prev3.some(b=>b.c<b.o);
     const pullPut=tnd.f<0&&redsRun<=2&&prev3.some(b=>b.c>b.o);
+    const falling=use.at(-1).c<use.at(-2).c&&use.at(-2).c<use.at(-3).c;
+    const rising=use.at(-1).c>use.at(-2).c&&use.at(-2).c>use.at(-3).c;
+    if(ev.dir==="CALL"&&falling) return {dir:null,conf:0,why:"Alta já perdeu o fechamento. Sem compra."};
+    if(ev.dir==="PUT"&&rising) return {dir:null,conf:0,why:"Baixa já perdeu o fechamento. Sem venda."};
     if(!(ev.dir==="CALL"?pullCall:pullPut)) return {dir:null,conf:0,why:"Fluxo sem pullback. Sem perseguir vela."};
     ev.conf=Math.min(93,(ev.conf||80)+2);
     return ev;
@@ -1493,8 +1497,15 @@ function evalSraw(id,bars){
   const body=Math.abs(last.c-last.o), rng=Math.max(last.h-last.l,1e-9);
   const bullRej=last.c>last.o && (Math.min(last.o,last.c)-last.l)>body*0.6;
   const bearRej=last.c<last.o && (last.h-Math.max(last.o,last.c))>body*0.6;
-  if(up&&pulled&&(bullRej||last.c>=last.o)) return{dir:"CALL",conf:bullRej?82:70,why:"Fluxo de alta. Preço recuou na MM20 ("+ma.toFixed(4)+") e retomou. Pullback, não chase.",touch:ma};
-  if(dn&&pulled&&(bearRej||last.c<=last.o)) return{dir:"PUT",conf:bearRej?82:70,why:"Fluxo de baixa. Preço fez alívio na MM20 ("+ma.toFixed(4)+") e voltou a pressionar. Pullback de venda.",touch:ma};
+  const prev=bars.at(-2);
+  const swingHi=Math.max.apply(null,bars.slice(-8,-1).map(b=>b.h));
+  const swingLo=Math.min.apply(null,bars.slice(-8,-1).map(b=>b.l));
+  const failedUp=last.c<swingHi*0.998 && bars.slice(-3).filter(b=>b.c<b.o).length>=2;
+  const failedDn=last.c>swingLo*1.002 && bars.slice(-3).filter(b=>b.c>b.o).length>=2;
+  const resumeCall=prev&&prev.l<=ma*1.002&&last.c>last.o&&last.c>ma&&last.c>prev.c&&bullRej&&!failedUp;
+  const resumePut=prev&&prev.h>=ma*0.998&&last.c<last.o&&last.c<ma&&last.c<prev.c&&bearRej&&!failedDn;
+  if(up&&resumeCall) return{dir:"CALL",conf:90,why:"Pullback na MM20. Vela fechou acima da média e retomou.",touch:last.c};
+  if(dn&&resumePut) return{dir:"PUT",conf:90,why:"Pullback na MM20. Vela fechou abaixo da média e retomou a baixa.",touch:last.c};
   if(up&&!pulled) return{dir:null,conf:0,why:"Alta vigente, mas o preço ainda não recuou na média. Profissional espera o pullback."};
   if(dn&&!pulled) return{dir:null,conf:0,why:"Baixa vigente, mas sem alívio na média. Sem pullback, sem entrada."};
   return{dir:null,conf:0,why:"Recuo existe, porém o candle ainda não confirmou a retomada."};
