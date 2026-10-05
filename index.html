@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v86</title>
+<title>RyckTrader v87</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v86</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v87</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2635,7 +2635,7 @@ async function apiConfirm(a,dir){
 
 async function runSig(){
  const area=$("sigArea"); if(!area) return;
- if(ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil)){
+ if(Date.now()<(ST._nextAt||0)){
    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
    return;
  }
@@ -2831,11 +2831,13 @@ async function runSig(){
     ST._lastSids=(ST._lastSids||[]).concat([best.sid||""]).slice(-4);
     ST._rot=(ST._rot+1)%Math.max(1,BEST_OPS.length);
   }
-  if(ST._holdUntil && Date.now()<ST._holdUntil && ST._holdHtml){
-    area.innerHTML=ST._holdHtml; area.dataset.busy=""; ST._scanLock=0; return;
+  if(Date.now()<(ST._nextAt||0)){
+    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
+    area.dataset.busy=""; ST._scanLock=0; return;
   }
+  ST._nextAt=Date.now()+60000;
   ST._entryOpen=true;
-  ST._holdUntil=Date.now()+60000;
+  ST._holdUntil=ST._nextAt;
   ST._scanGen=(ST._scanGen||0)+1;
   const parFalado=pairName(best.a);
     const ladoFalado=best.dir==="CALL"?"Compra":"Venda";
@@ -2874,19 +2876,15 @@ async function runSig(){
     if(say && ST._freezeSay && say.textContent!==ST._freezeSay) say.textContent=ST._freezeSay;
   },300);
   ST.signal={closeAt:Math.floor(ST._holdUntil/1000),dir:best.dir,asset:best.a.id,name:pairName(best.a)};
+  if(ST._arm) clearTimeout(ST._arm);
+  ST._arm=setTimeout(()=>{ ST._arm=null; if(Date.now()< (ST._nextAt||0)) return; ST._entryOpen=false; ST._scanLock=0; try{ runSig(); }catch(e){} }, 60000);
   const left=$("left");
   if(ST._tick) clearInterval(ST._tick);
   ST._tick=setInterval(()=>{
     if(!left) return;
     const s=Math.max(0,Math.ceil((ST._holdUntil-Date.now())/1000));
     left.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
-    if(s<=0){
-      clearInterval(ST._tick);
-      if(ST.panelTab==="sinais" && ST._autoHunt!==false){
-        ST._holdUntil=0; ST._scanLock=0; ST._spokenHold=false; ST._entryOpen=false;
-        setTimeout(()=>{ if(ST._speaking){ ST._holdUntil=Date.now()+4000; return;} try{ runSig(); }catch(e){} }, 8000);
-      }
-    }
+    if(s<=0){ clearInterval(ST._tick); }
   },400);
  }catch(e){ if(!ST._entryOpen) area.innerHTML="<p class='muted'>Feed: "+e.message+"</p>"; }
  area.dataset.busy=""; ST._scanLock=0;
@@ -3591,13 +3589,8 @@ function setDeskMkt(m){
   document.querySelectorAll("#mktFilt button").forEach(x=>x.classList.toggle("on",x.getAttribute("data-m")===ST.mkt));
   deskRender();
   deskQuotes();
-  const live=ST._holdUntil && Date.now()<ST._holdUntil && ST._pinAsset;
-  if(!live){
-    ST._pinAsset="";
-    ST._scanLock=0;
-    if(ST.panelTab==="sinais") setTimeout(()=>{ try{ runSig(); }catch(e){} }, 200);
-  }
 }
+
 function deskBind(){
   if(ST._deskBound) return;
   ST._deskBound=true;
