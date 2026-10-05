@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v73</title>
+<title>RyckTrader v74</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -148,7 +148,7 @@ h1{font-size:20px;font-weight:800}.sub{color:var(--muted);font-size:12px;margin:
 .sig{border:1px solid #5a1e1e;border-radius:16px;padding:14px;background:#140a0a}
 .sig.call{border-color:#1d5a33;background:#0c1c12}
 .bigdir{font-size:26px;font-weight:800}
-.box{background:#0a0a0a;border-radius:10px;padding:10px;margin-top:8px}
+.box{background:#0a0a0a;border-radius:8px;padding:6px 8px;margin-top:4px}
 .box span{display:block;color:var(--muted);font-size:10px}
 .load{padding:16px;border:1px solid #245c3a;border-radius:16px;background:#0c140f;display:flex;gap:12px}
 .ring{width:64px;height:64px;border-radius:50%;border:6px solid #1b3a28;border-top-color:var(--green);animation:sp 1s linear infinite;flex-shrink:0}
@@ -410,7 +410,7 @@ h1,.brand b,.bigdir{font-family:Sora,Inter,sans-serif!important;letter-spacing:-
   h1{font-size:22px!important}
   .asset{padding:14px 12px!important;border-radius:16px!important}
   .btn{min-height:48px;font-size:15px!important}
-  .sig .bigdir{font-size:34px!important}
+  .sig .bigdir{font-size:18px!important}
   .search,select,input[type=number]{min-height:46px;font-size:16px!important}
 }
 @media (display-mode: standalone){
@@ -433,9 +433,9 @@ h1,.brand b,.bigdir{font-family:Sora,Inter,sans-serif!important;letter-spacing:-
 .robo-mouth{display:none!important}
 
 .robo-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:4px auto 8px;width:100%}
-.robo-stage{position:relative;width:104px;height:112px;margin:0 auto;flex-shrink:0;animation:roboIdle 2.2s ease-in-out infinite}
+.robo-stage{position:relative;width:168px;height:198px;margin:0 auto;flex-shrink:0;animation:roboIdle 2.6s ease-in-out infinite}
 .robo, .robo-face{
-  width:104px;height:112px;flex-shrink:0;position:relative;
+  width:168px;height:198px;display:block;margin:0 auto;flex-shrink:0;position:relative;
   object-fit:contain;background:transparent;border-radius:0;box-shadow:none;
 }
 .robo-stage.talk{animation:roboTalk 0.45s ease-in-out infinite}
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v73</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v74</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2534,7 +2534,8 @@ function strats(){$("pg-estrat").innerHTML="<h1>Estratégias</h1>"+STRATS.map(s=
 function per(){return ST.tf==="60"?60:ST.tf==="120"?120:300;}
 function nextEnd(openT){const p=per(),now=Date.now()/1000;const end=openT+p;return end>now?end:Math.floor(now/p)*p+p;}
 function closedBars(bars){if(!bars||bars.length<5)return bars||[];const p=per(),now=Date.now()/1000;const last=bars.at(-1);return (now-last.t)<p-1?bars.slice(0,-1):bars;}
-const ROBO_SRC='https://cdn.jsdelivr.net/gh/rycktrader02-blip/rycktrader-demo@main/robo-clear.png';
+const ROBO_SRC='https://cdn.jsdelivr.net/gh/rycktrader02-blip/rycktrader-demo@main/robo-idle.png';
+const ROBO_TALK='https://cdn.jsdelivr.net/gh/rycktrader02-blip/rycktrader-demo@main/robo-talk.png';
 function showPanelTab(tab){
   ST.panelTab=tab==="sinais"?"sinais":"ativos";
   const p=$("aiPanel"); if(p) p.classList.remove("hidden");
@@ -2825,7 +2826,7 @@ async function runSig(){
     const ladoFalado=best.dir==="CALL"?"Compra":"Venda";
     const fala=ladoFalado+". "+parFalado.replace("/"," ")+". Próxima vela.";
     const bubble=$("roboSay"); if(bubble) bubble.textContent=fala;
-    ST._freezeSay=fala; ST._spokenHold=true; ST._entryOpen=true;
+    ST._freezeSay=fala; ST._spokenHold=true; ST._entryOpen=true; ST._forceSpeak=true;
     try{ if(window.speechSynthesis){ speechSynthesis.cancel(); ST._speaking=false; speakNow(fala); } }catch(e){}
     ST.asset=best.a; ST._lastId=best.a.id; ST._speakNow=false;
     try{ openBrokerPair(best.a, best.dir); }catch(e){}
@@ -2836,7 +2837,8 @@ async function runSig(){
     const rsiv=(rsi(usedBars.map(b=>b.c)).at(-1)||50).toFixed(1);
     const vela=lastB.c>=lastB.o?"alta":"baixa";
     const expLab="1 minuto";
-    area.innerHTML="<div class='sig "+(best.dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · "+(best.tf==="300"?"M5":"M1")+"</div><div style='font-size:26px;line-height:1.1;text-align:center;margin:4px 0'>"+pairIcon(best.a)+"</div><div class='muted' style='text-align:center'><b>"+best.a.name+"</b><br>"+best.sname+"</div><div class='bigdir "+(best.dir==="CALL"?"up":"down")+"'>"+(best.dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+fmt(touch,best.a.digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>"+expLab+"</b></div><div class='box'><span>ENTRAR ATÉ</span><b id='left'>--:--</b></div><p class='muted'>"+best.why+"</p></div>"
+    if(ST._entryOpen && ST._holdHtml){ area.innerHTML=ST._holdHtml; area.dataset.busy=""; ST._scanLock=0; return; }
+  area.innerHTML="<div class='sig "+(best.dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · "+(best.tf==="300"?"M5":"M1")+"</div><div style='font-size:26px;line-height:1.1;text-align:center;margin:4px 0'>"+pairIcon(best.a)+"</div><div class='muted' style='text-align:center'><b>"+best.a.name+"</b><br>"+best.sname+"</div><div class='bigdir "+(best.dir==="CALL"?"up":"down")+"'>"+(best.dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+fmt(touch,best.a.digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>"+expLab+"</b></div><div class='box'><span>ENTRAR ATÉ</span><b id='left'>--:--</b></div><p class='muted'>"+best.why+"</p></div>"
     +"<div class='card'><div class='muted'>MERCADO AGORA</div><div class='trends'><div class='tf'><span>ESTRUTURA</span><b class='"+(td.cls==="up"?"up":"down")+"'>"+td.lab+"</b></div><div class='tf'><span>VELA</span><b>"+vela+"</b></div><div class='tf'><span>RSI</span><b>"+rsiv+"</b></div></div><p class='muted'>Abertura "+fmt(lastB.o,best.a.digits)+" · Máx "+fmt(lastB.h,best.a.digits)+" · Mín "+fmt(lastB.l,best.a.digits)+" · Fecha "+fmt(lastB.c,best.a.digits)+"</p></div>"
 ;
   ST._holdHtml=area.innerHTML;
@@ -3805,12 +3807,17 @@ function speakNow(txt){
   if(!window.speechSynthesis) return false;
   const clean=String(txt||"").replace(/\s+/g," ").trim();
   if(!clean) return false;
-  if(ST._speaking || ST._entryOpen){ return false; }
+  if(ST._speaking && !ST._forceSpeak) return false;
   if(ST._lastSpoken===clean && Date.now()-(ST._lastSpokenAt||0)<12000) return true;
   ST._lastSpoken=clean;
   ST._lastSpokenAt=Date.now();
   ST._speaking=true;
+  ST._forceSpeak=false;
   ST._queuedSpeak="";
+  const face=document.getElementById("robo");
+  const stage=document.getElementById("roboStage");
+  if(face) face.src=ROBO_TALK;
+  if(stage) stage.classList.add("talk");
   try{
     const v=pickVoice();
     const nm=((v&&v.name)||"").toLowerCase();
@@ -3827,6 +3834,10 @@ function speakNow(txt){
     const done=()=>{
       if(tok!==ST._sayQ) return;
       ST._speaking=false;
+      const face2=document.getElementById("robo");
+      const stage2=document.getElementById("roboStage");
+      if(face2) face2.src=ROBO_SRC;
+      if(stage2) stage2.classList.remove("talk");
       ST._saidAt=Date.now();
       roboSay(clean,false);
       const next=ST._queuedSpeak;
