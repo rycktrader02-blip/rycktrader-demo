@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v80</title>
+<title>RyckTrader v81</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v80</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v81</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2726,13 +2726,22 @@ async function runSig(){
       if(ST._firedSid[sid+"|"+a.id+"|"+slot]) continue;
       let ev=runOne(sid,bars);
       if(!bars || bars.length<12) continue;
+      const last=bars[bars.length-1], prev=bars[bars.length-2];
+      if(!last||!prev||!(last.c>0)) continue;
+      const px=last.c;
+      const nm=String(a.name||"");
+      if(nm==="NZD/USD" && (px<0.3 || px>0.9)) continue;
+      if(nm==="EUR/USD" && (px<0.8 || px>1.4)) continue;
+      if(/JPY$/.test(nm) && px<10) continue;
       ev=gateSig(sid,bars,ev);
       if(!ev||!ev.dir) continue;
       if((ev.conf||0)<91) continue;
-      const last=bars[bars.length-1], prev=bars[bars.length-2];
-      if(!last||!prev) continue;
-      if(ev.dir==="CALL" && last.c<prev.c) continue;
+      const bear=last.c<last.o && last.c<=prev.c;
+      const bull=last.c>last.o && last.c>=prev.c;
+      if(ev.dir==="PUT" && !bear) continue;
+      if(ev.dir==="CALL" && !bull) continue;
       if(ev.dir==="PUT" && last.c>prev.c) continue;
+      if(ev.dir==="CALL" && last.c<prev.c) continue;
       if(sid==="mira" && (ST._lastSids||[]).indexOf("mira")>=0) continue;
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
