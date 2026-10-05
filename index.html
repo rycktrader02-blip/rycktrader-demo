@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v100</title>
+<title>RyckTrader v101</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v100</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v101</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -853,6 +853,7 @@ const ASSETS=[
  {id:"SUI-USD",name:"Sui",ticker:"SUIUSDT",digits:4,src:"crypto"},
 ];
 const STRATS=[
+ {id:"pad",name:"Padrões de vela",short:"Padrões de vela",desc:"Martelo, enforcado, estrela, doji, pião, marubozu e cabeça rapada.",how:"Só entra na vela fechada do desenho, no fundo ou no topo.",call:"Martelo, libélula, marubozu de alta no fundo.",put:"Enforcado, estrela cadente, lápide no topo."},
  {id:"bb",name:"Bandas de Bollinger — Toque + Rejeição",short:"Bandas de Bollinger",desc:"Preço bateu no teto ou no chão do canal e foi rejeitado.",how:"Bandas 20 períodos e 2 desvios. Toque com pavio de rejeição = reversão.",call:"Pavio fura a banda inferior e fecha para cima.",put:"Pavio fura a banda superior e fecha para baixo."},
  {id:"eng",name:"Engolfo (Price Action)",short:"Engolfo",desc:"Padrão clássico de reversão.",how:"A vela atual cobre o corpo da anterior e fecha no sentido oposto.",call:"Alta engole a baixa anterior.",put:"Baixa engole a alta anterior."},
  {id:"frac",name:"Fractal de Williams",short:"Fractal de Williams",desc:"Topos e fundos confirmados pela geometria.",how:"Duas máximas ou mínimas de cada lado confirmam o fractal.",call:"Defesa de um fractal de baixa recente.",put:"Perda de um fractal de alta recente."},
@@ -1559,6 +1560,47 @@ function evalSraw(id,bars){
   if(call) return{dir:"CALL",conf:80,why:"Seta MEGA CALL: EMA13 e histograma subindo na vela verde.",touch:last.c};
   if(put) return{dir:"PUT",conf:80,why:"Seta MEGA PUT: EMA13 e histograma descendo na vela vermelha.",touch:last.c};
   return{dir:null,conf:0,why:"Sem seta MEGA nesta vela."};
+ }
+ function candlePadrao(bars){
+  if(!bars||bars.length<12) return {dir:null,conf:0,why:"Sem contexto do padrão"};
+  const use=closedBars(bars)||bars;
+  const last=use.at(-1), prev=use.at(-2);
+  const rng=Math.max(last.h-last.l,1e-12);
+  const body=Math.abs(last.c-last.o);
+  const loW=Math.min(last.o,last.c)-last.l;
+  const hiW=last.h-Math.max(last.o,last.c);
+  const doji=body<=rng*0.12;
+  const small=body<=rng*0.35;
+  const w=use.slice(-12,-1);
+  const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
+  const span=Math.max(hi-lo,1e-12);
+  const atTop=last.h>=hi-span*0.22;
+  const atBot=last.l<=lo+span*0.22;
+  const fell=use.slice(-5,-1).filter(b=>b.c<b.o).length>=2;
+  const rose=use.slice(-5,-1).filter(b=>b.c>b.o).length>=2;
+  const bullClose=last.c>last.o && last.c>prev.c;
+  const bearClose=last.c<last.o && last.c<prev.c;
+  if(doji && loW>=rng*0.65 && hiW<=rng*0.12 && atBot && fell) return {dir:"CALL",conf:90,why:"Libélula doji no fundo.",sname:"Libélula"};
+  if(doji && hiW>=rng*0.65 && loW<=rng*0.12 && atTop && rose) return {dir:"PUT",conf:90,why:"Lápide doji no topo.",sname:"Lápide"};
+  if(small && loW>=body*2 && loW>=rng*0.55 && hiW<=rng*0.18 && atBot && fell && bullClose) return {dir:"CALL",conf:89,why:"Martelo no fundo.",sname:"Martelo"};
+  if(small && loW>=body*2 && loW>=rng*0.55 && hiW<=rng*0.18 && atTop && rose && bearClose) return {dir:"PUT",conf:89,why:"Enforcado no topo.",sname:"Enforcado"};
+  if(small && hiW>=body*2 && hiW>=rng*0.55 && loW<=rng*0.18 && atTop && rose && bearClose) return {dir:"PUT",conf:89,why:"Estrela cadente no topo.",sname:"Estrela"};
+  if(small && hiW>=body*2 && hiW>=rng*0.55 && loW<=rng*0.18 && atBot && fell && bullClose) return {dir:"CALL",conf:86,why:"Martelo invertido no fundo.",sname:"Martelo inv."};
+  if(doji && hiW>=rng*0.35 && loW>=rng*0.35 && atTop && rose && bearClose) return {dir:"PUT",conf:84,why:"Doji de pernas compridas no topo.",sname:"Doji"};
+  if(doji && hiW>=rng*0.35 && loW>=rng*0.35 && atBot && fell && bullClose) return {dir:"CALL",conf:84,why:"Doji riquixá no fundo.",sname:"Doji"};
+  if(small && hiW>=body && loW>=body && atTop && rose && bearClose) return {dir:"PUT",conf:82,why:"Pião no topo.",sname:"Pião"};
+  if(small && hiW>=body && loW>=body && atBot && fell && bullClose) return {dir:"CALL",conf:82,why:"Pião no fundo.",sname:"Pião"};
+  if(body>=rng*0.85 && hiW<=rng*0.08 && loW<=rng*0.08){
+    if(last.c>last.o && atBot) return {dir:"CALL",conf:86,why:"Marubozu de alta no fundo.",sname:"Marubozu"};
+    if(last.c<last.o && atTop) return {dir:"PUT",conf:86,why:"Marubozu de baixa no topo.",sname:"Marubozu"};
+  }
+  if(body>=rng*0.7 && hiW<=rng*0.08 && atBot && bullClose) return {dir:"CALL",conf:83,why:"Cabeça rapada de alta.",sname:"Cabeça rapada"};
+  if(body>=rng*0.7 && loW<=rng*0.08 && atTop && bearClose) return {dir:"PUT",conf:83,why:"Cabeça rapada de baixa.",sname:"Cabeça rapada"};
+  return {dir:null,conf:0,why:"Nenhum padrão da figura nesta vela."};
+}
+
+ if(id==="pad"){
+  return candlePadrao(bars);
  }
  if(id==="mira"){
   return miracleArrow(bars);
@@ -2726,7 +2768,7 @@ async function runSig(){
     uni=uni.slice(ST._pairRot).concat(uni.slice(0, ST._pairRot));
     ST._pairRot=(ST._pairRot+7)%uni.length;
   }
-  const BEST_OPS=["pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri","mira"];
+  const BEST_OPS=["pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri","mira"];
   ST._rot=ST._rot||0;
   ST._lastSids=ST._lastSids||[];
   const ops=want==="auto" ? BEST_OPS.slice() : [want];
@@ -2776,7 +2818,7 @@ async function runSig(){
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
     for(const sid of ops){
       const FLOW={ari:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,mira:1,retest:1,liq:1};
-      const REV={pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,dark:1,prc:1,pa:1,tw:1,ttop:1,choc:1,eqsw:1,out:1};
+      const REV={pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,dark:1,prc:1,pa:1,tw:1,ttop:1,choc:1,eqsw:1,out:1};
       if(want==="auto"){
         const use=closedBars(bars)||bars;
         const tnd=trend(use)||{f:0};
