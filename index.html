@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v88</title>
+<title>RyckTrader v89</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v88</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v89</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2835,7 +2835,8 @@ async function runSig(){
     if(ST._holdHtml) area.innerHTML=ST._holdHtml;
     area.dataset.busy=""; ST._scanLock=0; return;
   }
-  ST._nextAt=Date.now()+60000;
+  const _open=Math.ceil(Date.now()/60000)*60000;
+  ST._nextAt=(_open-Date.now()<3000?_open+120000:_open+60000);
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._scanGen=(ST._scanGen||0)+1;
@@ -2859,7 +2860,7 @@ async function runSig(){
     const nextOpen=(Math.floor(Date.now()/1000/tfSec)+1)*tfSec;
     const nd=new Date(nextOpen*1000);
     const nextCandle=String(nd.getHours()).padStart(2,"0")+":"+String(nd.getMinutes()).padStart(2,"0")+":"+String(nd.getSeconds()).padStart(2,"0");
-  area.innerHTML="<div class='sig "+(best.dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · "+(best.tf==="300"?"M5":"M1")+"</div><div style='font-size:26px;line-height:1.1;text-align:center;margin:4px 0'>"+pairIcon(best.a)+"</div><div class='muted' style='text-align:center'><b>"+best.a.name+"</b><br>"+best.sname+"</div><div class='bigdir "+(best.dir==="CALL"?"up":"down")+"'>"+(best.dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+fmt(touch,best.a.digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>"+expLab+"</b></div><div class='box'><span>VELA DA ENTRADA</span><b id='velaClock'>"+nextCandle+"</b></div><div class='box'><span>PRÓXIMA ENTRADA</span><b id='left'>--:--:--</b></div><p class='muted'>"+best.why+"</p></div>"
+  area.innerHTML="<div class='sig "+(best.dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · "+(best.tf==="300"?"M5":"M1")+"</div><div style='font-size:26px;line-height:1.1;text-align:center;margin:4px 0'>"+pairIcon(best.a)+"</div><div class='muted' style='text-align:center'><b>"+best.a.name+"</b><br>"+best.sname+"</div><div class='bigdir "+(best.dir==="CALL"?"up":"down")+"'>"+(best.dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+fmt(touch,best.a.digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>"+expLab+"</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>"+nextCandle+"</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>--:--:--</b></div></div><p class='muted'>"+best.why+"</p></div>"
     +"<div class='card'><div class='muted'>MERCADO AGORA</div><div class='trends'><div class='tf'><span>ESTRUTURA</span><b class='"+(td.cls==="up"?"up":"down")+"'>"+td.lab+"</b></div><div class='tf'><span>VELA</span><b>"+vela+"</b></div><div class='tf'><span>RSI</span><b>"+rsiv+"</b></div></div><p class='muted'>Abertura "+fmt(lastB.o,best.a.digits)+" · Máx "+fmt(lastB.h,best.a.digits)+" · Mín "+fmt(lastB.l,best.a.digits)+" · Fecha "+fmt(lastB.c,best.a.digits)+"</p></div>"
 ;
   ST._holdHtml=area.innerHTML;
@@ -2877,7 +2878,7 @@ async function runSig(){
   },300);
   ST.signal={closeAt:Math.floor(ST._holdUntil/1000),dir:best.dir,asset:best.a.id,name:pairName(best.a)};
   if(ST._arm) clearTimeout(ST._arm);
-  ST._arm=setTimeout(()=>{ ST._arm=null; if(Date.now()< (ST._nextAt||0)) return; ST._entryOpen=false; ST._scanLock=0; try{ runSig(); }catch(e){} }, 60000);
+  ST._arm=setTimeout(()=>{ ST._arm=null; if(Date.now()< (ST._nextAt||0)-500) return; ST._entryOpen=false; ST._scanLock=0; try{ runSig(); }catch(e){} }, Math.max(1000,(ST._nextAt||Date.now())-Date.now()));
   if(ST._tick) clearInterval(ST._tick);
   const clock=d=>{ const x=new Date(d); return String(x.getHours()).padStart(2,"0")+":"+String(x.getMinutes()).padStart(2,"0")+":"+String(x.getSeconds()).padStart(2,"0"); };
   ST._tick=setInterval(()=>{
