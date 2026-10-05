@@ -2531,7 +2531,7 @@ function proPick(bars,m1,m5){
   let best=null;
   ids.forEach(x=>{
     try{
-      const ev=x[0]===?miracleArrow(closedBars(b1)):x[0]==="ari"?ariFluxo(b1):evalS(x[0],b1);
+      const ev=evalS(x[0],closedBars(b1));
       if(!ev||!ev.dir) return;
       const pack=Object.assign({sname:x[1],sid:x[0],same:x[0]==="ari"?1:!!ev.same},ev);
       if(!best || (pack.conf||0)>(best.conf||0)) best=pack;
