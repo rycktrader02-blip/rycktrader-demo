@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v81</title>
+<title>RyckTrader v82</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v81</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v82</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2580,10 +2580,18 @@ function sinais(){
   document.querySelectorAll("#mktFilt button").forEach(b=>b.onclick=()=>{
     ST.mkt=b.dataset.m; ST.filt=ST.mkt; ST.deskMkt=ST.mkt;
     ST._autoHunt=true;
+    ST._entryOpen=false; ST._holdUntil=0; ST._spokenHold=false; ST._pinAsset=""; ST._holdHtml=""; ST._freezeHtml="";
+    ST._scanLock=0;
+    if(ST._freezeT){ clearInterval(ST._freezeT); ST._freezeT=0; }
+    try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
+    ST._speaking=false;
+    ST._scanGen=(ST._scanGen||0)+1;
     document.querySelectorAll("#mktFilt button").forEach(x=>x.classList.toggle("on",x===b));
     document.querySelectorAll("#aiMkt button").forEach(x=>x.classList.toggle("on",x.getAttribute("data-m")===ST.deskMkt));
     const nome=ST.mkt==="crypto"?"cripto":"forex";
-    if(!(ST._entryOpen && Date.now()<ST._holdUntil)) roboSay("Automático em "+nome+". A próxima entrada sai sozinha.", false);
+    roboSay("Analisando os pares de "+nome+".", false);
+    const area=$("sigArea"); if(area) area.innerHTML="<div class='muted'>A VARRER "+nome.toUpperCase()+"</div>";
+    setTimeout(()=>{ try{ runSig(); }catch(e){} }, 40);
   });
   if($("selS")) $("selS").onchange=e=>{ST.strat=e.target.value;};
   if($("btnSig")) $("btnSig").onclick=()=>{
@@ -2853,7 +2861,7 @@ async function runSig(){
 ;
   ST._holdHtml=area.innerHTML;
   ST._pinAsset=best.a.id;
-  ST._entryOpen=true; ST._holdUntil=Date.now()+300000;
+  ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
   ST._freezeHtml=area.innerHTML;
   ST._freezeSay=(document.getElementById("roboSay")||{}).textContent||"";
   if(ST._freezeT) clearInterval(ST._freezeT);
