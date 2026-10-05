@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v97</title>
+<title>RyckTrader v98</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v97</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v98</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1366,7 +1366,14 @@ function miracleArrow(bars){
   const swingHi=last.h>=hi*0.9996 && last.h>=prev.h && last.h>=a.h;
   const bounce=last.c>=last.l+rng*0.55 && (last.c>=last.o || loW>body);
   const reject=last.c<=last.h-rng*0.55 && (last.c<=last.o || hiW>body);
-  if((swingLo||nearS)&&bounce){
+  const spike=bars.slice(-8);
+  const spikeHi=Math.max.apply(null,spike.map(b=>b.h));
+  const reds=spike.slice(-4).filter(b=>b.c<b.o).length;
+  const rejectedTop=last.c<spikeHi*0.999 && reds>=2 && last.c<=prev.c;
+  if((swingHi||nearR||rejectedTop)&&reject){
+    return{dir:"PUT",conf:90,fluxo:1,sname:"Miracle",why:"Seta vermelha na resistência. Topo rejeitado.",touch:last.h};
+  }
+  if((swingLo||nearS)&&bounce&&!rejectedTop&&last.c>prev.c){
     const conf=swingLo&&nearS?90:nearS?86:82;
     return{dir:"CALL",conf,fluxo:1,sname:"Miracle",why:"Seta azul no suporte.",touch:last.l};
   }
