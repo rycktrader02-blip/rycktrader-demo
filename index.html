@@ -2859,7 +2859,7 @@ async function runSig(){
     const r=(rsi(use.map(b=>b.c)).at(-1)||50);
     const body=Math.abs(last.c-last.o)/Math.max(last.h-last.l,1e-12);
     if(body<0.28) return {dir:null};
-    const skipMira=(ST._lastSids||[]).indexOf()>=0;
+    const skipMira=false>=0;
     try{ const ari=ariFluxo(use); if(ari&&ari.dir&&ari.conf>=86) return Object.assign({sid:"ari"},ari); }catch(e){}
     try{ const eng=evalS("eng", use); if(eng&&eng.dir) return Object.assign({sid:"eng",sname:"Engolfo"},eng); }catch(e){}
     try{ const pin=evalS("pin", use); if(pin&&pin.dir) return Object.assign({sid:"pin",sname:"Pin Bar"},pin); }catch(e){}
@@ -2915,7 +2915,7 @@ async function runSig(){
       if(ev.dir==="CALL" && !bull) continue;
       if(ev.dir==="PUT" && last.c>prev.c) continue;
       if(ev.dir==="CALL" && last.c<prev.c) continue;
-      if(sid=== && (ST._lastSids||[]).indexOf()>=0) continue;
+      
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
       const same=sid==="ari"||!!ev.same;
