@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v78</title>
+<title>RyckTrader v79</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v78</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v79</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2597,7 +2597,7 @@ function sinais(){
     ST._speakNow=true; ST._autoHunt=true; ST.voice=true; ST._pinAsset="";
     if(ST._holdUntil && Date.now()<ST._holdUntil){
       const s=Math.ceil((ST._holdUntil-Date.now())/1000);
-      roboSay("Espera "+s+" segundos. Uma entrada por minuto.",false);
+      roboSay("Espera "+Math.ceil(s/60)+" minutos para a próxima entrada.",false);
       return;
     }
     ST._scanLock=0; runSig();
@@ -2851,7 +2851,7 @@ async function runSig(){
 ;
   ST._holdHtml=area.innerHTML;
   ST._pinAsset=best.a.id;
-  ST._entryOpen=true; ST._holdUntil=Math.max(closeAt*1000, Date.now()+((String(best.tf)==='300')?305000:70000));
+  ST._entryOpen=true; ST._holdUntil=Date.now()+300000;
   ST._freezeHtml=area.innerHTML;
   ST._freezeSay=(document.getElementById("roboSay")||{}).textContent||"";
   if(ST._freezeT) clearInterval(ST._freezeT);
