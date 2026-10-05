@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v94</title>
+<title>RyckTrader v95</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v94</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v95</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2548,7 +2548,7 @@ function drawA(a,st,m1,m5,m15,h1){
   +"<div class='row2'><button class='btn ghost' onclick='backAtivos()'>OUTRO ATIVO</button><button class='btn gold' onclick='showPanelTab(\"sinais\")'>VER SINAIS</button></div><p class='muted' style='margin-top:8px'>Leitura do fechamento da última vela.</p>";
   requestAnimationFrame(()=>drawChart("kchart", use, fib));
 }
-function strats(){$("pg-estrat").innerHTML="<h1>Estratégias</h1>"+STRATS.map(s=>"<div class='asset' onclick=\"ST.strat='"+s.id+"';go('sinais')\"><div class='nm'><b>"+s.short+"</b><span>"+s.desc+"</span></div></div>").join("");}
+function strats(){$("pg-estrat").innerHTML="<h1>Estratégias</h1>"+STRATS.map(s=>"<div class='asset' onclick=\"pickStrat('"+s.id+"')\"><div class='nm'><b>"+s.short+"</b><span>"+s.desc+"</span></div></div>").join("");}
 function per(){return ST.tf==="60"?60:ST.tf==="120"?120:300;}
 function nextEnd(openT){const p=per(),now=Date.now()/1000;const end=openT+p;return end>now?end:Math.floor(now/p)*p+p;}
 function closedBars(bars){if(!bars||bars.length<5)return bars||[];const p=per(),now=Date.now()/1000;const last=bars.at(-1);return (now-last.t)<p-1?bars.slice(0,-1):bars;}
@@ -2603,7 +2603,7 @@ function sinais(){
     const nome=ST.mkt==="crypto"?"cripto":"forex";
     roboSay("Mercado "+nome+". A análise segue no automático.", false);
   });
-  if($("selS")) $("selS").onchange=e=>{ST.strat=e.target.value;};
+  if($("selS")) $("selS").onchange=e=>{ pickStrat(e.target.value); };
   if($("btnSig")) $("btnSig").onclick=()=>{
     ST._speakNow=true; ST._autoHunt=true; ST.voice=true; ST._pinAsset="";
     if(ST._holdUntil && Date.now()<ST._holdUntil){
@@ -2651,6 +2651,14 @@ async function apiConfirm(a,dir){
 }
 
 
+function pickStrat(id){
+  ST.strat=id||"auto";
+  ST._holdUntil=0; ST._entryOpen=false; ST._scanLock=0; ST._firedSid={};
+  ST._pinAsset=""; ST._autoHunt=true; ST.voice=true;
+  try{ if(typeof deskCloseDrawer==="function") deskCloseDrawer(); }catch(e){}
+  go("sinais");
+  setTimeout(function(){ try{ runSig(); }catch(e){} }, 80);
+}
 async function runSig(){
  const area=$("sigArea"); if(!area) return;
  if(Date.now()<(ST._nextAt||0)){
@@ -2690,6 +2698,7 @@ async function runSig(){
   ST._rot=ST._rot||0;
   ST._lastSids=ST._lastSids||[];
   const ops=want==="auto" ? BEST_OPS.slice() : [want];
+  if(want!=="auto" && ops[0]!==want) ops.splice(0,ops.length,want);
   const focusSid=ops[0];
   const opLab=((STRATS.find(s=>s.id===focusSid)||{}).short||focusSid);
   if(ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil)){
@@ -3599,7 +3608,7 @@ function deskOpen(p){
   }
   if(p==="biblio"){
     document.querySelectorAll(".page").forEach(el=>el.classList.toggle("on",el.id==="pg-biblio"));
-    $("pg-biblio").innerHTML="<h1>Biblioteca</h1><p class='sub'>Setups do desk. Toca para usar no automático.</p>"+STRATS.map(s=>"<div class='asset' onclick=\"ST.strat='"+s.id+"';deskCloseDrawer();deskShowPanel()\"><div class='nm'><b>"+s.short+"</b><span>"+s.desc+"</span></div></div>").join("");
+    $("pg-biblio").innerHTML="<h1>Biblioteca</h1><p class='sub'>Setups do desk. Toca para usar no automático.</p>"+STRATS.map(s=>"<div class='asset' onclick=\"pickStrat('"+s.id+"')\"><div class='nm'><b>"+s.short+"</b><span>"+s.desc+"</span></div></div>").join("");
     return;
   }
   if(p==="suporte"){
