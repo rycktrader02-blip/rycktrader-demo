@@ -2802,7 +2802,7 @@ async function warmFeed(){
     if(n<ids.length) setTimeout(step,400);
   })();
 }
-function runSig(){
+async function runSig(){
   try{ warmFeed(); }catch(e){}
 
  const area=$("sigArea"); if(!area) return;
