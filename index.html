@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v126</title>
+<title>RyckTrader v127</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v126</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v127</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2745,12 +2745,14 @@ function sinais(){
   const box=$("aiSig")||$("pg-sinais");
   if(!box) return;
   if(ST._entryOpen && Date.now()<ST._holdUntil && box.querySelector("#sigArea")) return;
-  box.innerHTML="<div class='robo-wrap'><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div class='tfsw' id='tfFilt'><button data-t='60' class='"+(ST.tf!=="300"?"on":"")+"'>1 minuto</button><button data-t='300' class='"+(ST.tf==="300"?"on":"")+"'>5 minutos</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.filter(x=>!["mira","ari","snip","mega"].includes(x.id)).map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
+  box.innerHTML="<div class='robo-wrap'><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div class='tfsw' id='tfFilt'><button data-mode='m1m5' class='"+(ST._pairMode!=="m5m1"?"on":"")+"'>M1/M5</button><button data-mode='m5m1' class='"+(ST._pairMode==="m5m1"?"on":"")+"'>M5/M1</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.filter(x=>!["mira","ari","snip","mega"].includes(x.id)).map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
   fillVoices();
   document.querySelectorAll("#tfFilt button").forEach(b=>b.onclick=()=>{
-    ST.tf=b.dataset.t;
+    ST._pairMode=b.dataset.mode||"m1m5";
+    ST.tf=ST._pairMode==="m5m1"?"300":"60";
+    ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=""; ST._holdHtml="";
     document.querySelectorAll("#tfFilt button").forEach(x=>x.classList.toggle("on",x===b));
-    document.querySelectorAll("#aiTf button").forEach(x=>x.classList.toggle("on",x.dataset.tf===ST.tf));
+    try{ runSig(); }catch(e){}
   });
   document.querySelectorAll("#mktFilt button").forEach(b=>b.onclick=()=>{
     ST.mkt=b.dataset.m; ST.filt=ST.mkt; ST.deskMkt=ST.mkt;
@@ -3018,6 +3020,15 @@ async function runSig(){
   if(best && usedBars){
     best.exp=pickExpiry(usedBars);
     best.tf=String(g);
+    const confirmG=ST._pairMode==="m5m1"?60:300;
+    try{
+      const cb=await withT(candles(best.a.id, confirmG), 1200);
+      const last=cb && cb.at(-1);
+      if(last){
+        const confirmDir=last.c>=last.o?"CALL":"PUT";
+        if(confirmDir!==best.dir) best=null;
+      }
+    }catch(e){}
   }
   const key=(want==="auto"?(best?best.sid:STRATS[0].id):want)+"_"+ST.tf;
   const bt=ST.back[key]||ST.back[ST.strat+"_"+ST.tf]||{};
@@ -3037,7 +3048,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v126. M1 e M5 separados. Cada botão lê só o seu tempo.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v127. M1/M5 entra no M1 e confirma no M5. M5/M1 o contrário.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
