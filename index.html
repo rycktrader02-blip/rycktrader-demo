@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v109</title>
+<title>RyckTrader v110</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v109</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v110</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1572,7 +1572,7 @@ function evalSraw(id,bars){
 }
 function lineReject(bars){
   const use=closedBars(bars)||bars;
-  if(!use||use.length<16) return {dir:null};
+  if(!use||use.length<10) return {dir:null};
   const last=use.at(-1), prev=use.at(-2);
   const w=use.slice(-24,-1);
   const hi=Math.max.apply(null,w.map(b=>b.h));
@@ -2837,7 +2837,7 @@ async function runSig(){
   const picked=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
   const mkt=picked;
   ST.mkt=mkt; ST.filt=mkt; ST.deskMkt=mkt;
-  if(!ST._holdHtml) area.innerHTML="<div class='muted'>A VARRER "+(mkt==="crypto"?"CRIPTO":"FOREX")+"</div><p class='muted'>O par só troca quando sair outra entrada.</p>";
+  if(!ST._holdHtml) area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+"</div><p class='muted'>A entrada sai no toque da linha, sem esperar o mercado inteiro.</p>";
   const seenT=new Set();
   const uniq=list=>list.filter(a=>{
     const k=String(a.ticker||a.id||"").replace("/","");
@@ -3003,9 +3003,9 @@ async function runSig(){
     await new Promise(resolve=>{
       let open=uni.length, done=false;
       const finish=()=>{ if(!done){ done=true; resolve(); } };
-      const timer=setTimeout(finish, 900);
+      const timer=setTimeout(finish, 350);
       uni.forEach(a=>{
-        withT(candles(a.id,g), 700).then(raw=>{
+        withT(candles(a.id,g), 280).then(raw=>{
           if(!done && raw && raw.length){ take(a, raw); if(best){ clearTimeout(timer); finish(); } }
         }).finally(()=>{ open--; if(open<=0){ clearTimeout(timer); finish(); } });
       });
@@ -3036,7 +3036,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v109. Sem toque na linha. Nova busca já.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v110. Sem toque na linha nesta vela.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
