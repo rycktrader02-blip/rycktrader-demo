@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v115</title>
+<title>RyckTrader v116</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v115</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v116</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2944,7 +2944,17 @@ async function runSig(){
       if(/JPY$/.test(nm) && px<10) continue;
       ev=gateSig(sid,bars,ev);
       if(!ev||!ev.dir) continue;
-      if((ev.conf||0)<(sid==="srx"||sid==="pad"?76:84)) continue;
+      if((ev.conf||0)<88) continue;
+      const box=closedBars(bars)||bars;
+      const bh=Math.max.apply(null,box.slice(-16,-1).map(b=>b.h));
+      const bl=Math.min.apply(null,box.slice(-16,-1).map(b=>b.l));
+      const bsp=Math.max(bh-bl,1e-12);
+      const atTop=last.h>=bh-bsp*0.12;
+      const atBot=last.l<=bl+bsp*0.12;
+      if(ev.dir==="CALL" && atTop) continue;
+      if(ev.dir==="PUT" && atBot) continue;
+      if(ev.dir==="CALL" && !atBot && sid!=="pull" && sid!=="bos" && sid!=="cnt_sol") continue;
+      if(ev.dir==="PUT" && !atTop && sid!=="pull" && sid!=="bos" && sid!=="cnt_sol") continue;
       const bear=last.c<last.o && last.c<=prev.c;
       const bull=last.c>last.o && last.c>=prev.c;
       if(ev.dir==="PUT" && !bear) continue;
@@ -3033,7 +3043,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v115. Linha, padrões e a lista, em todos os pares.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v116. Estratégia só no extremo. Sem compra no topo.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
