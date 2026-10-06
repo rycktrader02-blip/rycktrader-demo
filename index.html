@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v131</title>
+<title>RyckTrader v132</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v131</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v132</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2857,7 +2857,7 @@ async function runSig(){
   const fxAll=uniq(ASSETS.filter(a=>a.src==="fx"));
   const cryAll=uniq(ASSETS.filter(a=>a.src==="crypto"));
   let uni=mkt==="crypto"?cryAll:fxAll;
-  if(ST._pinAsset){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; }
+  if(ST._pinAsset && Date.now()<(ST._holdUntil||0)){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; } else if(ST._pinAsset){ ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(ST._pinAsset)<0) ST._usedIds.push(ST._pinAsset); ST._pinAsset=""; }
   const used=ST._usedIds||[];
   const fresh=uni.filter(a=>used.indexOf(a.id)<0);
   if(fresh.length>=6) uni=fresh;
@@ -2913,7 +2913,7 @@ async function runSig(){
   function scorePair(a,bars,tf){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
-    if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
+    if(used.indexOf(a.id)>=0) return;
     const fast=["pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq","srx"];
     const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
     for(const sid of order){
@@ -3053,7 +3053,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v131. Entra a estratégia que o gráfico mostrar.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v132. Par travado na entrada. A próxima sai em outro ativo.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
