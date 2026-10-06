@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v114</title>
+<title>RyckTrader v115</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v114</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v115</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2927,29 +2927,10 @@ async function runSig(){
         return;
       }
     }catch(e){}
-    const fast=["srx","pad","pin","eng","star"];
+    const fast=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq"];
     const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
     for(const sid of order){
-      const FLOW={ari:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,mira:1,retest:1,liq:1};
-      const REV={srx:1,pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,dark:1,prc:1,pa:1,tw:1,ttop:1,choc:1,eqsw:1,out:1};
-      if(want==="auto" && sid!=="srx" && sid!=="pad"){
-        const use=closedBars(bars)||bars;
-        const tnd=trend(use)||{f:0};
-        const lastC=use.at(-1), prevC=use.at(-2);
-        const gRun=(function(){let n=0; for(let i=use.length-1;i>=0&&use[i].c>use[i].o;i--) n++; return n;})();
-        const rRun=(function(){let n=0; for(let i=use.length-1;i>=0&&use[i].c<use[i].o;i--) n++; return n;})();
-        const prev3=use.slice(-4,-1);
-        const flow=(tnd.f>0&&lastC.c>lastC.o&&gRun<=2&&prev3.some(b=>b.c<b.o))||(tnd.f<0&&lastC.c<lastC.o&&rRun<=2&&prev3.some(b=>b.c>b.o));
-        const w=use.slice(-14,-1);
-        const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
-        const span=Math.max(hi-lo,1e-12);
-        const rev=(lastC.h>=hi-span*0.18&&lastC.c<lastC.o)||(lastC.l<=lo+span*0.18&&lastC.c>lastC.o);
-        if(flow&&FLOW[sid]&&!REV[sid]){}
-        else if(!flow&&rev&&REV[sid]){}
-        else continue;
-      }
-
-      if(INDIC_IDS[sid]) continue;
+      if(sid==="mira"||sid==="ari") continue;
       if(ST._firedSid[sid+"|"+slot]) continue;
       if(ST._firedSid[sid+"|"+a.id+"|"+slot]) continue;
       let ev=runOne(sid,bars);
@@ -3052,7 +3033,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v114. Esperando o toque no suporte ou na resistência.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v115. Linha, padrões e a lista, em todos os pares.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
