@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v112</title>
+<title>RyckTrader v113</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v112</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v113</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1578,22 +1578,25 @@ function evalSraw(id,bars){
   return pts;
 }
 function lineReject(bars){
-  const use=closedBars(bars)||bars;
-  if(!use||use.length<16) return {dir:null};
-  const last=use.at(-1), prev=use.at(-2);
-  const w=use.slice(-20,-1);
+  const src=bars||[];
+  if(src.length<16) return {dir:null};
+  const live=src.at(-1);
+  const prev=src.at(-2);
+  const w=src.slice(-22,-1);
   const hi=Math.max.apply(null,w.map(b=>b.h));
   const lo=Math.min.apply(null,w.map(b=>b.l));
   const span=Math.max(hi-lo,1e-12);
-  const rng=Math.max(last.h-last.l,1e-12);
-  const upper=(last.h-Math.max(last.o,last.c))/rng;
-  const lower=(Math.min(last.o,last.c)-last.l)/rng;
-  const greens=use.slice(-3).filter(b=>b.c>b.o).length;
-  const reds=use.slice(-3).filter(b=>b.c<b.o).length;
-  const touchHi=last.h>=hi-span*0.04 && upper>=0.45 && last.c<last.o && last.c<hi-span*0.08;
-  const touchLo=last.l<=lo+span*0.04 && lower>=0.45 && last.c>last.o && last.c>lo+span*0.08;
-  if(touchHi && reds<3 && !(last.c>prev.c)) return {dir:"PUT",conf:90,why:"Rejeição na resistência. Pavio em cima e fechamento de volta.",sname:"Resistência"};
-  if(touchLo && greens<3 && !(last.c<prev.c)) return {dir:"CALL",conf:90,why:"Rejeição no suporte. Pavio embaixo e fechamento de volta.",sname:"Suporte"};
+  const rng=Math.max(live.h-live.l,1e-12);
+  const upper=(live.h-Math.max(live.o,live.c))/rng;
+  const lower=(Math.min(live.o,live.c)-live.l)/rng;
+  const reds=src.slice(-4,-1).filter(b=>b.c<b.o).length;
+  const greens=src.slice(-4,-1).filter(b=>b.c>b.o).length;
+  const onHi=live.h>=hi-span*0.015;
+  const onLo=live.l<=lo+span*0.015;
+  const put=onHi && live.c<hi && (upper>=0.28 || live.c<live.o) && live.c<=prev.c && reds<3;
+  const call=onLo && live.c>lo && (lower>=0.28 || live.c>live.o) && live.c>=prev.c && greens<3;
+  if(put) return {dir:"PUT",conf:91,why:"Toque na resistência. Venda na linha, não depois da queda.",sname:"Resistência",touch:hi};
+  if(call) return {dir:"CALL",conf:91,why:"Toque no suporte. Compra na linha, não depois da alta.",sname:"Suporte",touch:lo};
   return {dir:null};
 }
 function structureM1(bars){
@@ -3046,7 +3049,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v112. Sem rejeição na linha. Sem entrada.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v113. Esperando o toque na linha.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
@@ -3059,7 +3062,7 @@ async function runSig(){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     area.dataset.busy=""; ST._scanLock=0; return;
   }
-  best.touch=livePx;
+  if(!(best.touch>0)) best.touch=livePx;
   const vs=volState(usedBars);
   if(false && ST.volOn!==false && !vs.ok){
     const falta=Math.max(0,Math.floor(closeAt-Date.now()/1000));
