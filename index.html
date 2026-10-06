@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v129</title>
+<title>RyckTrader v130</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v129</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v130</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2914,6 +2914,14 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
+    try{
+      const pv=candlePadrao(bars);
+      if(pv&&pv.dir){
+        best={a:a,sid:"pad",tf:tf,dir:pv.dir,conf:pv.conf||88,why:pv.why||"Padrão de vela.",sname:pv.sname||"Padrão de vela",touch:pv.touch};
+        usedBars=bars;
+        return;
+      }
+    }catch(e){}
     const fast=["pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq","srx"];
     const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
     for(const sid of order){
@@ -2933,12 +2941,15 @@ async function runSig(){
       const runR=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c<bars[i].o;i--) n++; return n;})();
       if(ev.dir==="CALL" && runG>=2) continue;
       if(ev.dir==="PUT" && runR>=2) continue;
-      const box=bars.slice(-16,-1);
-      const bh=Math.max.apply(null,box.map(b=>b.h)), bl=Math.min.apply(null,box.map(b=>b.l));
-      const bsp=Math.max(bh-bl,1e-12);
-      const pos=(last.c-bl)/bsp;
-      if(ev.dir==="CALL" && pos>0.28) continue;
-      if(ev.dir==="PUT" && pos<0.72) continue;
+      const pat={pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,tw:1,dark:1,prc:1,pa:1,ttop:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,retest:1,liq:1};
+      if(!pat[sid]){
+        const box=bars.slice(-16,-1);
+        const bh=Math.max.apply(null,box.map(b=>b.h)), bl=Math.min.apply(null,box.map(b=>b.l));
+        const bsp=Math.max(bh-bl,1e-12);
+        const pos=(last.c-bl)/bsp;
+        if(ev.dir==="CALL" && pos>0.28) continue;
+        if(ev.dir==="PUT" && pos<0.72) continue;
+      }
       
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
@@ -3051,7 +3062,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v129. Par travado até a próxima entrada.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v130. Padrão primeiro. Linha só se não houver padrão.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
