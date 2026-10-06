@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v120</title>
+<title>RyckTrader v121</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v120</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v121</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2919,15 +2919,7 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
-    try{
-      const hit=lineReject(bars);
-      if(hit&&hit.dir){
-        best=Object.assign({a:a,sid:"srx",tf:tf},hit);
-        usedBars=bars;
-        return;
-      }
-    }catch(e){}
-    const fast=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq"];
+    const fast=["pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq","srx"];
     const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
     for(const sid of order){
       if(sid==="mira"||sid==="ari") continue;
@@ -2942,7 +2934,7 @@ async function runSig(){
       if(nm==="EUR/USD" && (px<0.8 || px>1.4)) continue;
       if(/JPY$/.test(nm) && px<10) continue;
       if(!ev||!ev.dir) continue;
-      if((ev.conf||0)<80) continue;
+      if((ev.conf||0)<68) continue;
       const box=closedBars(bars)||bars;
       const bh=Math.max.apply(null,box.slice(-16,-1).map(b=>b.h));
       const bl=Math.min.apply(null,box.slice(-16,-1).map(b=>b.l));
@@ -2951,12 +2943,13 @@ async function runSig(){
       const atBot=last.l<=bl+bsp*0.2;
       if(ev.dir==="CALL" && atTop && !atBot) continue;
       if(ev.dir==="PUT" && atBot && !atTop) continue;
-      const bear=last.c<last.o && last.c<=prev.c;
-      const bull=last.c>last.o && last.c>=prev.c;
-      if(ev.dir==="PUT" && !bear) continue;
-      if(ev.dir==="CALL" && !bull) continue;
-      if(ev.dir==="PUT" && last.c>prev.c) continue;
-      if(ev.dir==="CALL" && last.c<prev.c) continue;
+      const pat={pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,tw:1,dark:1,prc:1,pa:1,ttop:1};
+      if(!pat[sid]){
+        const bear=last.c<last.o && last.c<=prev.c;
+        const bull=last.c>last.o && last.c>=prev.c;
+        if(ev.dir==="PUT" && !bear) continue;
+        if(ev.dir==="CALL" && !bull) continue;
+      }
       
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
@@ -2973,7 +2966,14 @@ async function runSig(){
       hits.push(pack);
       if(!best || pack._rank>(best._rank||0)){
         best=pack; usedBars=bars;
+        return;
       }
+    }
+    if(!best){
+      try{
+        const hit=lineReject(bars);
+        if(hit&&hit.dir){ best=Object.assign({a:a,sid:"srx",tf:tf},hit); usedBars=bars; }
+      }catch(e){}
     }
   }
   const g=+ST.tf||60;
@@ -3039,7 +3039,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v120. Forex só entra par de Forex.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v121. Padrão e estratégia primeiro. Linha se não tiver outro.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
