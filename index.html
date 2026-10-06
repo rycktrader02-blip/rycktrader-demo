@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v110</title>
+<title>RyckTrader v111</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v110</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v111</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1175,9 +1175,16 @@ async function candles(id,g){
         bars=await derivHistory(code, gran);
         ST.feedName="Deriv";
       }catch(e){
-        const rows=await fetchJSON("https://economia.awesomeapi.com.br/json/daily/"+awCode(a)+"/90");
-        bars=awBars(rows);
-        ST.feedName="AwesomeAPI";
+        try{
+          const y=String(a.ticker||a.id||"EURUSD").replace("/","");
+          const j=await fetchJSON("https://query1.finance.yahoo.com/v8/finance/chart/"+y+"=X?interval=1m&range=1d");
+          bars=yBars(j);
+          ST.feedName="Yahoo";
+        }catch(e2){
+          const rows=await fetchJSON("https://economia.awesomeapi.com.br/json/daily/"+awCode(a)+"/90");
+          bars=awBars(rows);
+          ST.feedName="AwesomeAPI";
+        }
       }
     } else {
       const gid=a&&a.id?a.id:id;
@@ -1578,10 +1585,10 @@ function lineReject(bars){
   const hi=Math.max.apply(null,w.map(b=>b.h));
   const lo=Math.min.apply(null,w.map(b=>b.l));
   const span=Math.max(hi-lo,1e-12);
-  const touchHi=last.h>=hi-span*0.08;
-  const touchLo=last.l<=lo+span*0.08;
-  const bear=last.c<last.o && last.c<prev.c;
-  const bull=last.c>last.o && last.c>prev.c;
+  const touchHi=last.h>=hi-span*0.16;
+  const touchLo=last.l<=lo+span*0.16;
+  const bear=last.c<last.o;
+  const bull=last.c>last.o;
   if(touchHi && bear && last.c<hi) return {dir:"PUT",conf:88,why:"Preço bateu na resistência e reverteu.",sname:"Resistência"};
   if(touchLo && bull && last.c>lo) return {dir:"CALL",conf:88,why:"Preço bateu no suporte e reverteu.",sname:"Suporte"};
   return {dir:null};
@@ -3003,9 +3010,9 @@ async function runSig(){
     await new Promise(resolve=>{
       let open=uni.length, done=false;
       const finish=()=>{ if(!done){ done=true; resolve(); } };
-      const timer=setTimeout(finish, 350);
+      const timer=setTimeout(finish, 2200);
       uni.forEach(a=>{
-        withT(candles(a.id,g), 280).then(raw=>{
+        withT(candles(a.id,g), 2000).then(raw=>{
           if(!done && raw && raw.length){ take(a, raw); if(best){ clearTimeout(timer); finish(); } }
         }).finally(()=>{ open--; if(open<=0){ clearTimeout(timer); finish(); } });
       });
@@ -3036,7 +3043,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v110. Sem toque na linha nesta vela.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v111. Sem toque nesta vela. A próxima busca já usa a vela guardada.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
