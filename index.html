@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v132</title>
+<title>RyckTrader v133</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v132</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v133</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2970,10 +2970,10 @@ async function runSig(){
         const dnW=(Math.min(last.o,last.c)-last.l)/Math.max(last.h-last.l,1e-12);
         const reds=bars.slice(-4,-1).filter(b=>b.c<b.o).length;
         const greens=bars.slice(-4,-1).filter(b=>b.c>b.o).length;
-        if(last.h>=hi-span*0.1 && last.c<last.o && upW>=0.35 && reds<3){
+        if(last.h>=hi-span*0.08 && last.c<last.o && last.c>lo+span*0.35 && upW>=0.4 && reds<2){
           best={a:a,sid:"srx",tf:tf,dir:"PUT",conf:90,why:"Pavio na resistência. Venda na linha.",sname:"Resistência",touch:hi};
           usedBars=bars;
-        } else if(last.l<=lo+span*0.1 && last.c>last.o && dnW>=0.35 && greens<3){
+        } else if(last.l<=lo+span*0.08 && last.c>last.o && last.c<hi-span*0.35 && dnW>=0.4 && greens<2){
           best={a:a,sid:"srx",tf:tf,dir:"CALL",conf:90,why:"Pavio no suporte. Compra na linha.",sname:"Suporte",touch:lo};
           usedBars=bars;
         }
@@ -3053,7 +3053,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v132. Par travado na entrada. A próxima sai em outro ativo.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v133. Entrada na mesma vela. Sem perseguir a que já andou.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
@@ -3092,7 +3092,7 @@ async function runSig(){
   const parFalado=pairName(best.a);
     const ladoFalado=best.dir==="CALL"?"Compra":"Venda";
     const motivo=String(best.sname||best.why||"leitura").replace(/\.$/,"");
-    const fala=ladoFalado+". "+parFalado.replace("/"," ")+". "+motivo+". Próxima vela. Próxima entrada em "+(ST.tf==="300"?"5 minutos":"1 minuto")+".";
+    const fala=ladoFalado+". "+parFalado.replace("/"," ")+". "+motivo+". Mesma vela.";
     const bubble=$("roboSay"); if(bubble) bubble.textContent=fala;
     ST._freezeSay=fala; ST._spokenHold=true; ST._entryOpen=true; ST._forceSpeak=true;
     try{ if(window.speechSynthesis){ speechSynthesis.cancel(); ST._speaking=false; speakNow(fala); } }catch(e){}
@@ -3104,7 +3104,7 @@ async function runSig(){
     const td=trend(usedBars);
     const rsiv=(rsi(usedBars.map(b=>b.c)).at(-1)||50).toFixed(1);
     const vela=lastB.c>=lastB.o?"alta":"baixa";
-    const expLab=ST.tf==="300"?"5 minutos":"1 minuto";
+    const expLab="Mesma vela";
     const tfSec=ST.tf==="300"?300:60;
     const nextOpen=(Math.floor(Date.now()/1000/tfSec)+1)*tfSec;
     const nd=new Date(nextOpen*1000);
