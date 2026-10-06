@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v128</title>
+<title>RyckTrader v129</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v128</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v129</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2857,7 +2857,7 @@ async function runSig(){
   const fxAll=uniq(ASSETS.filter(a=>a.src==="fx"));
   const cryAll=uniq(ASSETS.filter(a=>a.src==="crypto"));
   let uni=mkt==="crypto"?cryAll:fxAll;
-  if(ST._pinAsset && ST._holdUntil && Date.now()<ST._holdUntil){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; else ST._pinAsset=""; }
+  if(ST._pinAsset){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; }
   const used=ST._usedIds||[];
   const fresh=uni.filter(a=>used.indexOf(a.id)<0);
   if(fresh.length>=6) uni=fresh;
@@ -3051,7 +3051,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v128. Compra só no fundo. Venda só no topo. Sem perseguir.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v129. Par travado até a próxima entrada.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
@@ -3119,7 +3119,7 @@ async function runSig(){
   ST._pinAsset=best.a.id;
   if(ST._freezeT) clearInterval(ST._freezeT);
   ST._freezeT=setInterval(()=>{
-    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ clearInterval(ST._freezeT); ST._entryOpen=false; ST._pinAsset=""; return; }
+    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ clearInterval(ST._freezeT); ST._entryOpen=false; return; }
     const box=document.getElementById("sigArea");
     if(box && ST._freezeHtml && !box.querySelector("#velaClock")) box.innerHTML=ST._freezeHtml;
     const say=document.getElementById("roboSay");
