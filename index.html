@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v113</title>
+<title>RyckTrader v114</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v113</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v114</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1579,24 +1579,27 @@ function evalSraw(id,bars){
 }
 function lineReject(bars){
   const src=bars||[];
-  if(src.length<16) return {dir:null};
+  if(src.length<12) return {dir:null};
   const live=src.at(-1);
-  const prev=src.at(-2);
-  const w=src.slice(-22,-1);
+  const w=src.slice(-30,-1);
   const hi=Math.max.apply(null,w.map(b=>b.h));
   const lo=Math.min.apply(null,w.map(b=>b.l));
   const span=Math.max(hi-lo,1e-12);
+  const near=Math.max(span*0.08, lo*0.0008);
   const rng=Math.max(live.h-live.l,1e-12);
   const upper=(live.h-Math.max(live.o,live.c))/rng;
   const lower=(Math.min(live.o,live.c)-live.l)/rng;
-  const reds=src.slice(-4,-1).filter(b=>b.c<b.o).length;
-  const greens=src.slice(-4,-1).filter(b=>b.c>b.o).length;
-  const onHi=live.h>=hi-span*0.015;
-  const onLo=live.l<=lo+span*0.015;
-  const put=onHi && live.c<hi && (upper>=0.28 || live.c<live.o) && live.c<=prev.c && reds<3;
-  const call=onLo && live.c>lo && (lower>=0.28 || live.c>live.o) && live.c>=prev.c && greens<3;
-  if(put) return {dir:"PUT",conf:91,why:"Toque na resistência. Venda na linha, não depois da queda.",sname:"Resistência",touch:hi};
-  if(call) return {dir:"CALL",conf:91,why:"Toque no suporte. Compra na linha, não depois da alta.",sname:"Suporte",touch:lo};
+  const left=src.slice(-5,-1);
+  const reds=left.filter(b=>b.c<b.o).length;
+  const greens=left.filter(b=>b.c>b.o).length;
+  const onHi=live.h>=hi-near;
+  const onLo=live.l<=lo+near;
+  if(onHi && live.c<hi-near*0.2 && (upper>=0.22 || live.c<live.o) && reds<3){
+    return {dir:"PUT",conf:91,why:"Toque na resistência. Venda na linha.",sname:"Resistência",touch:hi};
+  }
+  if(onLo && live.c>lo+near*0.2 && (lower>=0.22 || live.c>live.o) && greens<3){
+    return {dir:"CALL",conf:91,why:"Toque no suporte. Compra na linha.",sname:"Suporte",touch:lo};
+  }
   return {dir:null};
 }
 function structureM1(bars){
@@ -3049,7 +3052,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v113. Esperando o toque na linha.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v114. Esperando o toque no suporte ou na resistência.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
