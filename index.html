@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v122</title>
+<title>RyckTrader v123</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v122</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v123</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1169,22 +1169,15 @@ async function candles(id,g){
         ST.feedName="Yahoo";
       }catch(e){ bars=[]; }
     } else if(a&&a.src==="fx"){
-      const code=fxWsCode(a);
-      const gran=+g||300;
       try{
-        bars=await derivHistory(code, gran);
-        ST.feedName="Deriv";
+        const rows=await fetchJSON("https://economia.awesomeapi.com.br/json/daily/"+awCode(a)+"/90");
+        bars=awBars(rows);
+        ST.feedName="AwesomeAPI";
       }catch(e){
         try{
-          const y=String(a.ticker||a.id||"EURUSD").replace("/","");
-          const j=await fetchJSON("https://query1.finance.yahoo.com/v8/finance/chart/"+y+"=X?interval=1m&range=1d");
-          bars=yBars(j);
-          ST.feedName="Yahoo";
-        }catch(e2){
-          const rows=await fetchJSON("https://economia.awesomeapi.com.br/json/daily/"+awCode(a)+"/90");
-          bars=awBars(rows);
-          ST.feedName="AwesomeAPI";
-        }
+          bars=await derivHistory(fxWsCode(a), +g||60);
+          ST.feedName="Deriv";
+        }catch(e2){ bars=[]; }
       }
     } else {
       const gid=a&&a.id?a.id:id;
@@ -2934,22 +2927,6 @@ async function runSig(){
       if(nm==="EUR/USD" && (px<0.8 || px>1.4)) continue;
       if(/JPY$/.test(nm) && px<10) continue;
       if(!ev||!ev.dir) continue;
-      if((ev.conf||0)<68) continue;
-      const box=closedBars(bars)||bars;
-      const bh=Math.max.apply(null,box.slice(-16,-1).map(b=>b.h));
-      const bl=Math.min.apply(null,box.slice(-16,-1).map(b=>b.l));
-      const bsp=Math.max(bh-bl,1e-12);
-      const atTop=last.h>=bh-bsp*0.2;
-      const atBot=last.l<=bl+bsp*0.2;
-      if(ev.dir==="CALL" && atTop && !atBot) continue;
-      if(ev.dir==="PUT" && atBot && !atTop) continue;
-      const pat={pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,tw:1,dark:1,prc:1,pa:1,ttop:1};
-      if(!pat[sid]){
-        const bear=last.c<last.o && last.c<=prev.c;
-        const bull=last.c>last.o && last.c>=prev.c;
-        if(ev.dir==="PUT" && !bear) continue;
-        if(ev.dir==="CALL" && !bull) continue;
-      }
       
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
@@ -2967,6 +2944,21 @@ async function runSig(){
       if(!best || pack._rank>(best._rank||0)){
         best=pack; usedBars=bars;
         return;
+      }
+    }
+    if(!best){
+      const last=bars.at(-1);
+      const w=bars.slice(-12,-1);
+      if(last && w.length){
+        const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
+        const span=Math.max(hi-lo,1e-12);
+        if(last.h>=hi-span*0.3 && last.c<=last.o){
+          best={a:a,sid:"srx",tf:tf,dir:"PUT",conf:86,why:"Rejeição na resistência.",sname:"Resistência",touch:hi};
+          usedBars=bars;
+        } else if(last.l<=lo+span*0.3 && last.c>=last.o){
+          best={a:a,sid:"srx",tf:tf,dir:"CALL",conf:86,why:"Rejeição no suporte.",sname:"Suporte",touch:lo};
+          usedBars=bars;
+        }
       }
     }
     if(!best){
@@ -2993,13 +2985,6 @@ async function runSig(){
     const hit=ST._barCache[a.id+"|"+g];
     if(hit&&hit.raw&&hit.raw.length) take(a, hit.raw);
     if(best) break;
-  }
-  if(!best && mkt==="fx"){
-    const extra=ASSETS.filter(a=>a.src==="crypto").slice(0,6);
-    extra.forEach(a=>{
-      const hit=ST._barCache&&ST._barCache[a.id+"|"+g];
-      if(hit&&hit.raw) take(a, hit.raw);
-    });
   }
   if(!best){
     const pg=$("scanProg"); if(pg) pg.textContent="Buscando a linha";
@@ -3039,7 +3024,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v122. Par travado até a vela fechar. Relógio correndo.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v123. Forex sem filtro. A entrada sai no par.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
