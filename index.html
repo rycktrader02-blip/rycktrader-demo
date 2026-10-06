@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v121</title>
+<title>RyckTrader v122</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v121</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v122</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3039,7 +3039,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v121. Padrão e estratégia primeiro. Linha se não tiver outro.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v122. Par travado até a vela fechar. Relógio correndo.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
@@ -3071,7 +3071,7 @@ async function runSig(){
     if(ST._holdHtml) area.innerHTML=ST._holdHtml;
     area.dataset.busy=""; ST._scanLock=0; return;
   }
-  ST._nextAt=Date.now()+12000;
+  ST._nextAt=(Math.floor(Date.now()/1000/60)+1)*60000;
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._scanGen=(ST._scanGen||0)+1;
@@ -3103,14 +3103,23 @@ async function runSig(){
   ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
   ST._freezeHtml=area.innerHTML;
   ST._freezeSay=(document.getElementById("roboSay")||{}).textContent||"";
+  ST._holdUntil=ST._nextAt;
+  ST._pinAsset=best.a.id;
   if(ST._freezeT) clearInterval(ST._freezeT);
   ST._freezeT=setInterval(()=>{
-    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ clearInterval(ST._freezeT); ST._entryOpen=false; return; }
+    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ clearInterval(ST._freezeT); ST._entryOpen=false; ST._pinAsset=""; return; }
     const box=document.getElementById("sigArea");
     if(box && ST._freezeHtml && !box.querySelector("#velaClock")) box.innerHTML=ST._freezeHtml;
     const say=document.getElementById("roboSay");
     if(say && ST._freezeSay && say.textContent!==ST._freezeSay) say.textContent=ST._freezeSay;
-  },300);
+    const left=Math.max(0, Math.ceil((ST._holdUntil-Date.now())/1000));
+    const mm=String(Math.floor(left/60)).padStart(2,"0");
+    const ss=String(left%60).padStart(2,"0");
+    const clk=document.getElementById("velaClock");
+    const fe=document.getElementById("left");
+    if(clk) clk.textContent=mm+":"+ss;
+    if(fe) fe.textContent=mm+":"+ss;
+  },250);
   ST.signal={closeAt:Math.floor(ST._holdUntil/1000),dir:best.dir,asset:best.a.id,name:pairName(best.a)};
   if(ST._arm) clearTimeout(ST._arm);
   ST._arm=setTimeout(()=>{ ST._arm=null; if(Date.now()< (ST._nextAt||0)-500) return; ST._entryOpen=false; ST._scanLock=0; try{ runSig(); }catch(e){} }, Math.max(1000,(ST._nextAt||Date.now())-Date.now()));
