@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v123</title>
+<title>RyckTrader v124</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v123</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v124</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2927,6 +2927,15 @@ async function runSig(){
       if(nm==="EUR/USD" && (px<0.8 || px>1.4)) continue;
       if(/JPY$/.test(nm) && px<10) continue;
       if(!ev||!ev.dir) continue;
+      const runG=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c>bars[i].o;i--) n++; return n;})();
+      const runR=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c<bars[i].o;i--) n++; return n;})();
+      if(ev.dir==="CALL" && runG>=3) continue;
+      if(ev.dir==="PUT" && runR>=3) continue;
+      const box=bars.slice(-16,-1);
+      const bh=Math.max.apply(null,box.map(b=>b.h)), bl=Math.min.apply(null,box.map(b=>b.l));
+      const bsp=Math.max(bh-bl,1e-12);
+      if(ev.dir==="CALL" && last.h>=bh-bsp*0.12) continue;
+      if(ev.dir==="PUT" && last.l<=bl+bsp*0.12) continue;
       
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
@@ -2952,11 +2961,15 @@ async function runSig(){
       if(last && w.length){
         const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
         const span=Math.max(hi-lo,1e-12);
-        if(last.h>=hi-span*0.3 && last.c<=last.o){
-          best={a:a,sid:"srx",tf:tf,dir:"PUT",conf:86,why:"Rejeição na resistência.",sname:"Resistência",touch:hi};
+        const upW=(last.h-Math.max(last.o,last.c))/Math.max(last.h-last.l,1e-12);
+        const dnW=(Math.min(last.o,last.c)-last.l)/Math.max(last.h-last.l,1e-12);
+        const reds=bars.slice(-4,-1).filter(b=>b.c<b.o).length;
+        const greens=bars.slice(-4,-1).filter(b=>b.c>b.o).length;
+        if(last.h>=hi-span*0.1 && last.c<last.o && upW>=0.35 && reds<3){
+          best={a:a,sid:"srx",tf:tf,dir:"PUT",conf:90,why:"Pavio na resistência. Venda na linha.",sname:"Resistência",touch:hi};
           usedBars=bars;
-        } else if(last.l<=lo+span*0.3 && last.c>=last.o){
-          best={a:a,sid:"srx",tf:tf,dir:"CALL",conf:86,why:"Rejeição no suporte.",sname:"Suporte",touch:lo};
+        } else if(last.l<=lo+span*0.1 && last.c>last.o && dnW>=0.35 && greens<3){
+          best={a:a,sid:"srx",tf:tf,dir:"CALL",conf:90,why:"Pavio no suporte. Compra na linha.",sname:"Suporte",touch:lo};
           usedBars=bars;
         }
       }
@@ -3024,7 +3037,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v123. Forex sem filtro. A entrada sai no par.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v124. Só pavio na linha. Terceira vela não entra.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
