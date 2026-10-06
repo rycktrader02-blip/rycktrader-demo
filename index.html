@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v130</title>
+<title>RyckTrader v131</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v130</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v131</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2914,14 +2914,6 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
-    try{
-      const pv=candlePadrao(bars);
-      if(pv&&pv.dir){
-        best={a:a,sid:"pad",tf:tf,dir:pv.dir,conf:pv.conf||88,why:pv.why||"Padrão de vela.",sname:pv.sname||"Padrão de vela",touch:pv.touch};
-        usedBars=bars;
-        return;
-      }
-    }catch(e){}
     const fast=["pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq","srx"];
     const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
     for(const sid of order){
@@ -2966,7 +2958,6 @@ async function runSig(){
       hits.push(pack);
       if(!best || pack._rank>(best._rank||0)){
         best=pack; usedBars=bars;
-        return;
       }
     }
     if(!best){
@@ -3062,7 +3053,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v130. Padrão primeiro. Linha só se não houver padrão.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v131. Entra a estratégia que o gráfico mostrar.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
