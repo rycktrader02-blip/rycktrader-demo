@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v127</title>
+<title>RyckTrader v128</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v127</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v128</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2931,13 +2931,14 @@ async function runSig(){
       if(!ev||!ev.dir) continue;
       const runG=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c>bars[i].o;i--) n++; return n;})();
       const runR=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c<bars[i].o;i--) n++; return n;})();
-      if(ev.dir==="CALL" && runG>=3) continue;
-      if(ev.dir==="PUT" && runR>=3) continue;
+      if(ev.dir==="CALL" && runG>=2) continue;
+      if(ev.dir==="PUT" && runR>=2) continue;
       const box=bars.slice(-16,-1);
       const bh=Math.max.apply(null,box.map(b=>b.h)), bl=Math.min.apply(null,box.map(b=>b.l));
       const bsp=Math.max(bh-bl,1e-12);
-      if(ev.dir==="CALL" && last.h>=bh-bsp*0.12) continue;
-      if(ev.dir==="PUT" && last.l<=bl+bsp*0.12) continue;
+      const pos=(last.c-bl)/bsp;
+      if(ev.dir==="CALL" && pos>0.28) continue;
+      if(ev.dir==="PUT" && pos<0.72) continue;
       
       const meta=STRATS.find(s=>s.id===sid);
       const nome=ev.sname||(meta&&meta.short)||sid;
@@ -3024,9 +3025,11 @@ async function runSig(){
     try{
       const cb=await withT(candles(best.a.id, confirmG), 1200);
       const last=cb && cb.at(-1);
-      if(last){
-        const confirmDir=last.c>=last.o?"CALL":"PUT";
-        if(confirmDir!==best.dir) best=null;
+      const prev=cb && cb.at(-2);
+      if(last && prev){
+        const chase=best.dir==="CALL" ? (last.c>last.o && prev.c>prev.o) : (last.c<last.o && prev.c<prev.o);
+        const against=best.dir==="CALL" ? last.c<prev.l : last.c>prev.h;
+        if(chase || against) best=null;
       }
     }catch(e){}
   }
@@ -3048,7 +3051,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v127. M1/M5 entra no M1 e confirma no M5. M5/M1 o contrário.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v128. Compra só no fundo. Venda só no topo. Sem perseguir.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
