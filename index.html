@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v108</title>
+<title>RyckTrader v109</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v108</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v109</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1569,6 +1569,22 @@ function evalSraw(id,bars){
     if(b.l<=bars[i-1].l && b.l<=bars[i-2].l && b.l<=bars[i+1].l) pts.push({i,k:"l",p:b.l});
   }
   return pts;
+}
+function lineReject(bars){
+  const use=closedBars(bars)||bars;
+  if(!use||use.length<16) return {dir:null};
+  const last=use.at(-1), prev=use.at(-2);
+  const w=use.slice(-24,-1);
+  const hi=Math.max.apply(null,w.map(b=>b.h));
+  const lo=Math.min.apply(null,w.map(b=>b.l));
+  const span=Math.max(hi-lo,1e-12);
+  const touchHi=last.h>=hi-span*0.08;
+  const touchLo=last.l<=lo+span*0.08;
+  const bear=last.c<last.o && last.c<prev.c;
+  const bull=last.c>last.o && last.c>prev.c;
+  if(touchHi && bear && last.c<hi) return {dir:"PUT",conf:88,why:"Preço bateu na resistência e reverteu.",sname:"Resistência"};
+  if(touchLo && bull && last.c>lo) return {dir:"CALL",conf:88,why:"Preço bateu no suporte e reverteu.",sname:"Suporte"};
+  return {dir:null};
 }
 function structureM1(bars){
   const use=closedBars(bars)||bars;
@@ -2887,6 +2903,14 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(used.indexOf(a.id)>=0 && fresh.length>=4) return;
+    try{
+      const hit=lineReject(bars);
+      if(hit&&hit.dir){
+        best=Object.assign({a:a,sid:"srx",tf:tf},hit);
+        usedBars=bars;
+        return;
+      }
+    }catch(e){}
     const fast=["srx","pad","pin","eng","star"];
     const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
     for(const sid of order){
@@ -2967,8 +2991,15 @@ async function runSig(){
     if(hit&&hit.raw&&hit.raw.length) take(a, hit.raw);
     if(best) break;
   }
+  if(!best && mkt==="fx"){
+    const extra=ASSETS.filter(a=>a.src==="crypto").slice(0,6);
+    extra.forEach(a=>{
+      const hit=ST._barCache&&ST._barCache[a.id+"|"+g];
+      if(hit&&hit.raw) take(a, hit.raw);
+    });
+  }
   if(!best){
-    const pg=$("scanProg"); if(pg) pg.textContent="Buscando entrada agora";
+    const pg=$("scanProg"); if(pg) pg.textContent="Buscando a linha";
     await new Promise(resolve=>{
       let open=uni.length, done=false;
       const finish=()=>{ if(!done){ done=true; resolve(); } };
@@ -3005,7 +3036,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v108. Procurando a vela fechada. Nova busca já.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v109. Sem toque na linha. Nova busca já.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
