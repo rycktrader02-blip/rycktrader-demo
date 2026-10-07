@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v135</title>
+<title>RyckTrader v136</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v135</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v136</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2497,10 +2497,12 @@ async function openA(id){
     const last0=q&&q.last?q.last:local5.at(-1).c;
     paint({last:last0,open:last0,high:last0,low:last0}, local1, local5, local5, local5);
     pct(72);
+    const c1=ST.cache[a.id+"_60"], c5=ST.cache[a.id+"_300"];
+    if(c1&&c1.bars) paint({last:c1.bars.at(-1).c,open:c1.bars.at(-1).o,high:c1.bars.at(-1).h,low:c1.bars.at(-1).l}, c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars);
     const [st,m1,m5]=await Promise.all([
-      raceMs(stats(a.id).catch(()=>({})),2200),
-      raceMs(candles(a.id,60).catch(()=>[]),3500),
-      raceMs(candles(a.id,300).catch(()=>[]),3500)
+      raceMs(stats(a.id).catch(()=>({})),400),
+      raceMs(candles(a.id,60).catch(()=>[]),550),
+      raceMs(candles(a.id,300).catch(()=>[]),550)
     ]);
     pct(98);
     const use1=(m1&&m1.length>=20)?m1:local1;
@@ -2508,8 +2510,8 @@ async function openA(id){
     paint(st&&st.last?st:{last:last0,open:last0,high:last0,low:last0}, use1, use5, use5, use5);
     pct(100);
     Promise.all([
-      raceMs(candles(a.id,900).catch(()=>[]),4000),
-      raceMs(candles(a.id,3600).catch(()=>[]),4000)
+      raceMs(candles(a.id,900).catch(()=>[]),700),
+      raceMs(candles(a.id,3600).catch(()=>[]),700)
     ]).then(([x15,xh1])=>{
       if(ST._viewA!==id) return;
       if(x15&&x15.length) ST.m15=closedBars(x15);
@@ -3058,7 +3060,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v135. Escolhe o ativo. O robô analisa e passa a entrada dele.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v136. Análise do ativo na velocidade do sinal.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
