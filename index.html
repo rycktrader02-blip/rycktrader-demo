@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v141</title>
+<title>RyckTrader v142</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v141</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v142</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2700,7 +2700,7 @@ function drawA(a,st,m1,m5,m15,h1){
   const lastC=tape[0];
   const velaTxt=lastC?("Última vela "+lastC.lab+" · corpo "+Math.round(lastC.press*100)+"% do range. Próxima: "+(lastC.lab==="COMPRA"||lastC.lab==="DEFESA"?"observa defesa na retração 50/61.8":lastC.lab==="VENDA"||lastC.lab==="REJEIÇÃO"?"observa rejeição na retração 50/61.8":"espera vela de decisão")):"Sem fita.";
   const box=panelBox(); if(!box) return;
-  const own=pick&&pick.dir?(pick.dir+" · "+a.name+" · "+(pick.sname||pick.why||"")):"Sem entrada nesta vela."; box.innerHTML="<div id='pickEntry' class='card'><div class='muted'>ENTRADA DO ATIVO</div><b>"+own+"</b></div><div class='card'><div class='headrow'><div><div class='muted'>"+a.name+" · "+a.ticker+"</div><div class='price'>"+fmt(last,a.digits)+"</div><div class='chips'><span class='chip "+(chg>=0?"up":"dn")+"'>24h "+(chg>=0?"+":"")+chg.toFixed(2)+"%</span><span class='chip'>máx "+fmt(st.high,a.digits)+"</span><span class='chip'>mín "+fmt(st.low,a.digits)+"</span></div></div><div class='gauge' style='background:conic-gradient(#3ee08a "+(sc*3.6)+"deg,#222 0)'><b>"+sc+"</b></div></div><div class='muted'>Leitura · "+hora+"</div><div class='trends'><div class='tf'><span>M1</span><b class='"+(tm1.cls==="up"?"up":"down")+"'>"+tm1.lab+"</b></div><div class='tf'><span>M5</span><b class='"+(t5.cls==="up"?"up":"down")+"'>"+t5.lab+"</b></div><div class='tf'><span>M15</span><b class='"+(t15.cls==="up"?"up":"down")+"'>"+t15.lab+"</b></div><div class='tf'><span>H1</span><b class='"+(t1.cls==="up"?"up":"down")+"'>"+t1.lab+"</b></div></div><p class='muted' style='margin-top:8px'>"+same+"</p><div class='chips'><span class='chip'>"+estrutura+"</span><span class='chip'>"+confn+"</span><span class='chip'>"+fluxoAgora+"</span></div></div>"
+  const bars=closedBars((+ST.tf===300?m5:m1)||m1||m5||[]); const pick=proPick(bars, closedBars(m1||[]), closedBars(m5||[])); const own=pick&&pick.dir?(pick.dir+" · "+a.name+" · "+(pick.sname||pick.why||"")):"Sem entrada nesta vela."; box.innerHTML="<div id='pickEntry' class='card'><div class='muted'>ENTRADA DO ATIVO</div><b>"+own+"</b></div><div class='card'><div class='headrow'><div><div class='muted'>"+a.name+" · "+a.ticker+"</div><div class='price'>"+fmt(last,a.digits)+"</div><div class='chips'><span class='chip "+(chg>=0?"up":"dn")+"'>24h "+(chg>=0?"+":"")+chg.toFixed(2)+"%</span><span class='chip'>máx "+fmt(st.high,a.digits)+"</span><span class='chip'>mín "+fmt(st.low,a.digits)+"</span></div></div><div class='gauge' style='background:conic-gradient(#3ee08a "+(sc*3.6)+"deg,#222 0)'><b>"+sc+"</b></div></div><div class='muted'>Leitura · "+hora+"</div><div class='trends'><div class='tf'><span>M1</span><b class='"+(tm1.cls==="up"?"up":"down")+"'>"+tm1.lab+"</b></div><div class='tf'><span>M5</span><b class='"+(t5.cls==="up"?"up":"down")+"'>"+t5.lab+"</b></div><div class='tf'><span>M15</span><b class='"+(t15.cls==="up"?"up":"down")+"'>"+t15.lab+"</b></div><div class='tf'><span>H1</span><b class='"+(t1.cls==="up"?"up":"down")+"'>"+t1.lab+"</b></div></div><p class='muted' style='margin-top:8px'>"+same+"</p><div class='chips'><span class='chip'>"+estrutura+"</span><span class='chip'>"+confn+"</span><span class='chip'>"+fluxoAgora+"</span></div></div>"
   +"<div class='card'><div class='muted'>PLANO DO DESK</div><p class='muted'>"+regra+"</p></div>"
   +"<div class='card'><div class='muted'>NÍVEIS S/R</div>"+L("R3",sw.R[2],"down")+L("R2",sw.R[1],"down")+L("R1",sw.R[0],"down")+"<div class='now'><span>AGORA</span><b>"+fmt(last,a.digits)+"</b></div>"+L("S1",sw.S[0],"up")+L("S2",sw.S[1],"up")+L("S3",sw.S[2],"up")+"</div>"
   +"<div class='sc2'><div class='bull'><h3>CENÁRIO DE ALTA</h3><b>Gatilho</b><br>Defesa do suporte / Fibo 61.8 de "+(s1?fmt(s1,a.digits):"—")+" com vela de compra.<br><br><b>Invalidação</b><br>Fechamento abaixo de "+(s1?fmt(s1,a.digits):"—")+".</div><div class='bear'><h3>CENÁRIO DE BAIXA</h3><b>Gatilho</b><br>Rejeição na resistência / Fibo 61.8 de "+(r1?fmt(r1,a.digits):"—")+" com vela de venda.<br><br><b>Invalidação</b><br>Fechamento acima de "+(r1?fmt(r1,a.digits):"—")+".</div></div>"
