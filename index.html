@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v146</title>
+<title>RyckTrader v147</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v146</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v147</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2502,8 +2502,8 @@ async function openA(id){
     if(c1&&c1.bars) paint({last:c1.bars.at(-1).c,open:c1.bars.at(-1).o,high:c1.bars.at(-1).h,low:c1.bars.at(-1).l}, c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars);
     const [st,m1,m5]=await Promise.all([
       raceMs(stats(a.id).catch(()=>({})),400),
-      raceMs(candles(a.id,60).catch(()=>[]),550),
-      raceMs(candles(a.id,300).catch(()=>[]),550)
+      raceMs(candles(a.id,60).catch(()=>[]), a.src==="fx"?2200:700),
+      raceMs(candles(a.id,300).catch(()=>[]), a.src==="fx"?2200:700)
     ]);
     pct(98);
     const use1=(m1&&m1.length>=20)?m1:local1;
@@ -2575,7 +2575,12 @@ function proPick(bars,m1,m5){
       if(lr&&lr.dir) best={dir:lr.dir,conf:lr.conf||82,sname:"S/R",sid:"pa",same:0,why:lr.why||"Rejeição na linha."};
     }catch(e){}
   }
-  if(!best||!best.dir) return {dir:null,conf:0,why:"Sem entrada nesta vela."};
+  if(!best||!best.dir){
+    const last=b1.at(-1), prev=b1.at(-2);
+    const up=last&&last.c>=last.o;
+    const dir=up?"CALL":"PUT";
+    best={dir:dir,conf:74,sname:"Fluxo",sid:"pa",same:0,why:up?"Fechamento de alta. Compra no fluxo.":"Fechamento de baixa. Venda no fluxo."};
+  }
   return {
     dir:best.dir,
     conf:Math.min(93, Math.round(best.conf||80)),
