@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v137</title>
+<title>RyckTrader v138</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v137</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v138</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2725,6 +2725,7 @@ function showPanelTab(tab){
   deskCloseDrawer();
   const list=$("aiList"), sig=$("aiSig"), tf=$("aiTf"), mkt=$("aiMkt");
   const onSig=ST.panelTab==="sinais";
+  if(onSig){ ST._pickId=""; }
   if(list) list.style.display=onSig?"none":"block";
   if(sig) sig.style.display=onSig?"block":"none";
   if(tf) tf.style.display=onSig?"none":"flex";
@@ -2921,7 +2922,7 @@ async function runSig(){
   function scorePair(a,bars,tf){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
-    if(used.indexOf(a.id)>=0) return;
+    if(!ST._pickId && used.indexOf(a.id)>=0) return;
     const fast=["pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq","srx"];
     const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
     for(const sid of order){
@@ -3137,7 +3138,7 @@ async function runSig(){
   ST._holdHtml=area.innerHTML;
   ST._pickSay=best.dir+" · "+pairName(best.a)+" · "+(best.sname||best.why||"");
   const pe=document.getElementById("pickEntry"); if(pe) pe.innerHTML="<div class='muted'>ENTRADA DO ATIVO</div><b>"+ST._pickSay+"</b>";
-  ST._pinAsset=best.a.id;
+  ST._pinAsset=best.a.id; ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id); if(ST._usedIds.length>8) ST._usedIds=ST._usedIds.slice(-4);
   ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
   ST._freezeHtml=area.innerHTML;
   ST._freezeSay=(document.getElementById("roboSay")||{}).textContent||"";
