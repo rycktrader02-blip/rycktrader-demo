@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v139</title>
+<title>RyckTrader v140</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v139</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v140</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2466,12 +2466,9 @@ function backAtivos(){ ST._viewA=null; ST._deskHtmlKey=""; deskRender(); }
 function raceMs(p,ms){ return Promise.race([p, new Promise(r=>setTimeout(()=>r([]),ms))]); }
 async function openA(id){
   const a=ASSETS.find(x=>x.id===id); if(!a) return;
-  ST.asset=a; ST._viewA=id; ST._pickId=id;
-  ST.mkt=a.src==="crypto"?"crypto":"fx"; ST.filt=ST.mkt; ST.deskMkt=ST.mkt;
-  ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=""; ST._holdHtml=""; ST._scanLock=0; ST._spokenHold=false;
-  ST._usedIds=[];
-  ST._pickSay="Lendo "+a.name+"...";
-  try{ runSig(); }catch(e){}
+  ST.asset=a; ST._viewA=id;
+  ST._assetOnly=id;
+  ST._pickId="";
   try{ deskSetTv(a); }catch(e){}
   const box=panelBox(); if(!box) return;
   box.innerHTML="<div class='muted'>ANALISANDO</div><h1>"+a.name+"</h1><p class='sub'>"+a.ticker+"</p><div class='loadbox'><div class='ringpct' id='loadPct'>18%</div><div class='loadsteps' id='loadSteps'><div class='on'>Coletando candles...</div><div>Mapeando suporte e resistência...</div><div>Medindo momentum e volatilidade...</div><div>Montando cenários...</div></div></div>";
@@ -2725,7 +2722,8 @@ function showPanelTab(tab){
   deskCloseDrawer();
   const list=$("aiList"), sig=$("aiSig"), tf=$("aiTf"), mkt=$("aiMkt");
   const onSig=ST.panelTab==="sinais";
-  if(onSig){ ST._pickId=""; }
+  if(onSig){ ST._pickId=""; ST._viewA=null; ST._assetOnly=""; }
+  else { ST._pickId=""; ST._scanLock=0; }
   if(list) list.style.display=onSig?"none":"block";
   if(sig) sig.style.display=onSig?"block":"none";
   if(tf) tf.style.display=onSig?"none":"flex";
@@ -2865,8 +2863,7 @@ async function runSig(){
   const fxAll=uniq(ASSETS.filter(a=>a.src==="fx"));
   const cryAll=uniq(ASSETS.filter(a=>a.src==="crypto"));
   let uni=mkt==="crypto"?cryAll:fxAll;
-  if(ST._pickId){ const pick=ASSETS.find(x=>x.id===ST._pickId); if(pick) uni=[pick]; }
-  else if(ST._pinAsset && Date.now()<(ST._holdUntil||0)){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; } else if(ST._pinAsset){ ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(ST._pinAsset)<0) ST._usedIds.push(ST._pinAsset); ST._pinAsset=""; }
+  if(ST._pinAsset && Date.now()<(ST._holdUntil||0) && ST.panelTab==="sinais"){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; } else if(ST._pinAsset && ST.panelTab==="sinais"){ ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(ST._pinAsset)<0) ST._usedIds.push(ST._pinAsset); ST._pinAsset=""; }
   const used=ST._usedIds||[];
   const fresh=uni.filter(a=>used.indexOf(a.id)<0);
   if(fresh.length>=6) uni=fresh;
@@ -3602,7 +3599,7 @@ function deskCardHtml(a){
   let chip="AGUARDANDO", chipCls="";
   if(st&&st.dir==="PUT"){ chip="VENDA"; chipCls="sell"; }
   else if(st&&st.dir==="CALL"){ chip="COMPRA"; chipCls="buy"; }
-  else if(st&&st.wait && ST._anaLock===a.id){ chip="ANALISANDO..."; chipCls="wait"; }
+  else if(st&&st.wait && ST._anaLock===a.id && ST.panelTab!=="sinais"){ chip="ANALISANDO..."; chipCls="wait"; }
   let btn="Analisar Sinal", btnCls="";
   if(st&&st.step){ btn=st.step; btnCls="run"; }
   if(st&&st.dir==="PUT"){ btn="Analisar Sinal"; btnCls="sell"; }
