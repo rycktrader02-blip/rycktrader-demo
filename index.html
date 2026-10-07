@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v148</title>
+<title>RyckTrader v149</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v148</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v149</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3967,12 +3967,14 @@ window.addEventListener("appinstalled",()=>{
 function showRtInstallBar(){
   if(document.getElementById("rtInstallBar")) return;
   if(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return;
-  const bar=document.createElement("div");
+  const bar=document.createElement("button");
   bar.id="rtInstallBar";
-  bar.style.cssText="position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;display:flex;gap:8px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:14px;background:#0b1220;border:1px solid #3b82f6;box-shadow:0 12px 40px rgba(0,0,0,.45);font-family:Inter,sans-serif";
-  bar.innerHTML='<span style="font:700 13px Inter,sans-serif;color:#e8eefc">Instalar RyckTrader no aparelho</span><button type="button" id="rtInstallNow" style="border:0;border-radius:10px;padding:10px 14px;background:#2563eb;color:#fff;font:800 13px Inter,sans-serif;cursor:pointer">Instalar</button>';
+  bar.type="button";
+  bar.title="Instalar";
+  bar.style.cssText="position:fixed;left:10px;bottom:14px;z-index:99999;width:42px;height:42px;border:0;border-radius:12px;background:#2563eb;color:#fff;font:800 18px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.4)";
+  bar.textContent="↓";
   document.body.appendChild(bar);
-  document.getElementById("rtInstallNow").onclick=installApp;
+  bar.onclick=installApp;
 }
 function installApp(){
   const ev=window._rtDeferredPrompt;
