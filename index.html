@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v142</title>
+<title>RyckTrader v143</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v142</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v143</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2471,6 +2471,7 @@ async function openA(id){
   ST._pickId="";
   try{ deskSetTv(a); }catch(e){}
   const box=panelBox(); if(!box) return;
+  ST._deskHtmlKey="";
   box.innerHTML="<div class='muted'>ANALISANDO</div><h1>"+a.name+"</h1><p class='sub'>"+a.ticker+"</p><div class='loadbox'><div class='ringpct' id='loadPct'>18%</div><div class='loadsteps' id='loadSteps'><div class='on'>Coletando candles...</div><div>Mapeando suporte e resistência...</div><div>Medindo momentum e volatilidade...</div><div>Montando cenários...</div></div></div>";
   const pct=n=>{ const el=$("loadPct"); if(el){ el.textContent=n+"%"; el.style.background="conic-gradient(#3dcf7a "+(n*3.6)+"deg,#1c2418 0)"; } };
   const paint=(st,m1,m5,m15,h1)=>{
@@ -2484,7 +2485,8 @@ async function openA(id){
     ST.m1=closedBars(m1||[]); ST.m5=closedBars(m5||[]); ST.m15=closedBars(m15||m5||[]); ST.h1=closedBars(h1||m5||[]);
     const quote=ST._deskPx&&ST._deskPx[a.id];
     const last=quote&&quote.last?quote.last:(st&&st.last)||(ST.m5.at(-1)&&ST.m5.at(-1).c)||0;
-    drawA(a, Object.assign({last:last,open:(st&&st.open)||last,high:(st&&st.high)||last,low:(st&&st.low)||last}, st||{}), ST.m1, ST.m5, ST.m15, ST.h1);
+    try{ drawA(a, Object.assign({last:last,open:(st&&st.open)||last,high:(st&&st.high)||last,low:(st&&st.low)||last}, st||{}), ST.m1, ST.m5, ST.m15, ST.h1); }
+    catch(e){ box.innerHTML="<div class='card'><div class='muted'>ATIVO</div><h1>"+a.name+"</h1><p class='sub'>"+a.ticker+"</p><button class='btn' onclick='backAtivos()'>Voltar</button></div>"; }
   };
   try{
     pct(44);
@@ -3613,16 +3615,10 @@ function deskCardHtml(a){
 function deskBindCards(box){
   box.querySelectorAll("[data-go]").forEach(bt=>bt.onclick=e=>{
     e.stopPropagation();
-    const id=bt.dataset.go;
-    Object.keys(ST._deskSig||{}).forEach(k=>{ if(k!==id && ST._deskSig[k]&&ST._deskSig[k].wait) delete ST._deskSig[k].wait; });
-    deskAnalyze(id);
+    openA(bt.dataset.go);
   });
   box.querySelectorAll("[data-copy]").forEach(bt=>bt.onclick=e=>{ e.stopPropagation(); copyVexEntry(bt.dataset.copy); });
-  box.querySelectorAll(".ai-card").forEach(cd=>cd.onclick=()=>{
-    const a=ASSETS.find(x=>x.id===cd.dataset.id); if(!a) return;
-    Object.keys(ST._deskSig||{}).forEach(k=>{ if(k!==a.id && ST._deskSig[k]&&ST._deskSig[k].wait) delete ST._deskSig[k].wait; });
-    openA(a.id);
-  });
+  box.querySelectorAll(".ai-card").forEach(cd=>cd.onclick=()=>openA(cd.dataset.id));
 }
 function deskPatchQuotes(){
   const box=$("aiList"); if(!box) return;
