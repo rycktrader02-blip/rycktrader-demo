@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v138</title>
+<title>RyckTrader v139</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v138</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v139</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3599,25 +3599,31 @@ function deskCardHtml(a){
   const px=quote[a.id];
   const pxTxt=px?fmt(px.last,a.digits):"—";
   const up=px?px.chg>=0:true;
-  let chip="—", chipCls="";
+  let chip="AGUARDANDO", chipCls="";
   if(st&&st.dir==="PUT"){ chip="VENDA"; chipCls="sell"; }
   else if(st&&st.dir==="CALL"){ chip="COMPRA"; chipCls="buy"; }
-  else if(st&&st.wait){ chip="ANALISANDO..."; chipCls="wait"; }
+  else if(st&&st.wait && ST._anaLock===a.id){ chip="ANALISANDO..."; chipCls="wait"; }
   let btn="Analisar Sinal", btnCls="";
   if(st&&st.step){ btn=st.step; btnCls="run"; }
   if(st&&st.dir==="PUT"){ btn="Analisar Sinal"; btnCls="sell"; }
   if(st&&st.dir==="CALL"){ btn="Analisar Sinal"; btnCls="buy"; }
   const conf=st&&st.conf?("<div class='ai-conf'>CONFLUÊNCIA: "+st.conf+"%</div>"):"";
   const chg=px&&isFinite(px.chg)?((px.chg>=0?"+":"")+px.chg.toFixed(2)+"%"):"—";
-  if(!st || (!st.dir && !st.wait)){ chip=a.src==="crypto"?"CRIPTO":"FOREX"; chipCls=""; }
+  if(!st || (!st.dir && !(st.wait && ST._anaLock===a.id))){ chip="AGUARDANDO"; chipCls=""; }
   const mkt=a.src==="crypto"?"Cripto":"Forex";
   return "<div class='ai-card' data-id='"+a.id+"'><div class='row1'><span class='sym'>"+deskLabel(a)+"</span><span class='px "+(up?"up":"")+"'>"+pxTxt+"</span></div><div class='ai-meta'><div>DURAÇÃO<div><b>"+(ST.tf==="300"?"5 MINUTOS":"1 MINUTO")+"</b></div></div><div style='text-align:right'>TENDÊNCIA DE:<div><span class='ai-chip "+chipCls+"'>"+chip+"</span></div></div></div><div class='ai-in'><span>ENTRADA EM:</span><b class='ai-eta'>"+deskNextIn()+"</b></div><p class='ai-hint'>Toque em Analisar Sinal</p><button class='ai-btn "+btnCls+"' data-go='"+a.id+"'>"+btn+"</button>"+conf+(st&&st.note?("<p class='ai-hint'>"+st.note+"</p>"):"")+"</div>";
 }
 function deskBindCards(box){
-  box.querySelectorAll("[data-go]").forEach(bt=>bt.onclick=e=>{ e.stopPropagation(); deskAnalyze(bt.dataset.go); });
+  box.querySelectorAll("[data-go]").forEach(bt=>bt.onclick=e=>{
+    e.stopPropagation();
+    const id=bt.dataset.go;
+    Object.keys(ST._deskSig||{}).forEach(k=>{ if(k!==id && ST._deskSig[k]&&ST._deskSig[k].wait) delete ST._deskSig[k].wait; });
+    deskAnalyze(id);
+  });
   box.querySelectorAll("[data-copy]").forEach(bt=>bt.onclick=e=>{ e.stopPropagation(); copyVexEntry(bt.dataset.copy); });
   box.querySelectorAll(".ai-card").forEach(cd=>cd.onclick=()=>{
     const a=ASSETS.find(x=>x.id===cd.dataset.id); if(!a) return;
+    Object.keys(ST._deskSig||{}).forEach(k=>{ if(k!==a.id && ST._deskSig[k]&&ST._deskSig[k].wait) delete ST._deskSig[k].wait; });
     openA(a.id);
   });
 }
