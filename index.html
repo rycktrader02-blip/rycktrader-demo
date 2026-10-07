@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v143</title>
+<title>RyckTrader v144</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v143</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v144</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1447,8 +1447,8 @@ function gateSig(sid, bars, ev){
   const greensRun=runColor(use,true), redsRun=runColor(use,false);
   const last4=use.slice(-4);
   const g4=last4.filter(b=>b.c>b.o).length, r4=last4.filter(b=>b.c<b.o).length;
-  if(ev.dir==="CALL" && (greensRun>=2 || g4>=3)) return {dir:null,conf:0,why:"Compra atrasada. Já passou da segunda vela. Sem entrada."};
-  if(ev.dir==="PUT" && (redsRun>=2 || r4>=3)) return {dir:null,conf:0,why:"Venda atrasada. Já passou da segunda vela. Sem entrada."};
+  if(ev.dir==="CALL" && (greensRun>=4 || g4>=4)) return {dir:null,conf:0,why:"Compra atrasada. Já passou da quarta vela. Sem entrada."};
+  if(ev.dir==="PUT" && (redsRun>=4 || r4>=4)) return {dir:null,conf:0,why:"Venda atrasada. Já passou da quarta vela. Sem entrada."};
   const last=use.at(-1);
   const w=use.slice(-14,-1);
   const hi=Math.max.apply(null,w.map(b=>b.h)), lo=Math.min.apply(null,w.map(b=>b.l));
@@ -2558,7 +2558,7 @@ function flowTape(bars,n=10){
 function proPick(bars,m1,m5){
   const b1=m1&&m1.length>=20?m1:bars;
   if(!b1||b1.length<8) return {dir:null,conf:0,why:"Sem velas"};
-  const ids=[["Miracle"],["ari","ARI Fluxo"],["pull","Pullback"],["pa","S/R"],["eng","Engolfo"],["pin","Pin Bar"],["bos","BOS"],["ob","Order Block"],["fvg","FVG"],["brt","Break Retest"],["liq","Liquidez"],["mss","MSS"],["snip","Sniper"],["mega","Mega Fluxo"],["star","Estrela"],["cnt_sol","Soldados"]];
+  const ids=[["pa","S/R"],["sr","Suporte"],["eng","Engolfo"],["bb","Bollinger"],["rsi","RSI"],["pull","Pullback"],["macd","MACD"],["ma","Médias"],["frac","Fractal"],["ari","ARI Fluxo"],["snip","Sniper"],["mega","Mega Fluxo"]];
   let best=null;
   ids.forEach(x=>{
     try{
@@ -2568,7 +2568,13 @@ function proPick(bars,m1,m5){
       if(!best || (pack.conf||0)>(best.conf||0)) best=pack;
     }catch(e){}
   });
-  if(!best||!best.dir) return {dir:null,conf:0,why:"Nenhuma estratégia sozinha neste par. Espera a próxima vela."};
+  if(!best||!best.dir){
+    try{
+      const lr=lineReject(closedBars(b1));
+      if(lr&&lr.dir) best={dir:lr.dir,conf:lr.conf||82,sname:"S/R",sid:"pa",same:0,why:lr.why||"Rejeição na linha."};
+    }catch(e){}
+  }
+  if(!best||!best.dir) return {dir:null,conf:0,why:"Sem entrada nesta vela."};
   return {
     dir:best.dir,
     conf:Math.min(93, Math.round(best.conf||80)),
