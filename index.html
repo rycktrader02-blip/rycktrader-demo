@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v147</title>
+<title>RyckTrader v148</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v147</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v148</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2469,7 +2469,10 @@ async function openA(id){
   const a=ASSETS.find(x=>x.id===id); if(!a) return;
   ST.asset=a; ST._viewA=id;
   ST._assetOnly=id;
+  ST._anaLock=id;
   ST._pickId="";
+  ST.mkt=a.src==="crypto"?"crypto":"fx";
+  ST.deskMkt=ST.mkt;
   try{ deskSetTv(a); }catch(e){}
   const box=panelBox(); if(!box) return;
   ST._deskHtmlKey="";
@@ -2576,10 +2579,14 @@ function proPick(bars,m1,m5){
     }catch(e){}
   }
   if(!best||!best.dir){
-    const last=b1.at(-1), prev=b1.at(-2);
-    const up=last&&last.c>=last.o;
-    const dir=up?"CALL":"PUT";
-    best={dir:dir,conf:74,sname:"Fluxo",sid:"pa",same:0,why:up?"Fechamento de alta. Compra no fluxo.":"Fechamento de baixa. Venda no fluxo."};
+    const last=b1.at(-1);
+    const hi=Math.max.apply(null,b1.slice(-12).map(x=>x.h));
+    const lo=Math.min.apply(null,b1.slice(-12).map(x=>x.l));
+    const nearHi=last && (hi-last.c)<=(hi-lo)*0.25;
+    const nearLo=last && (last.c-lo)<=(hi-lo)*0.25;
+    const dir=nearLo?"CALL":nearHi?"PUT":(last&&last.c>=last.o?"CALL":"PUT");
+    const sname=nearLo?"Suporte":nearHi?"Resistência":"Fluxo";
+    best={dir:dir,conf:76,sname:sname,sid:"pa",same:0,why:nearLo?"Defesa de suporte.":nearHi?"Rejeição na resistência.":(dir==="CALL"?"Fechamento de alta.":"Fechamento de baixa.")};
   }
   return {
     dir:best.dir,
@@ -3625,7 +3632,7 @@ function deskCardHtml(a){
   let chip="AGUARDANDO", chipCls="";
   if(st&&st.dir==="PUT"){ chip="VENDA"; chipCls="sell"; }
   else if(st&&st.dir==="CALL"){ chip="COMPRA"; chipCls="buy"; }
-  else if(st&&st.wait && ST._anaLock===a.id && ST.panelTab!=="sinais"){ chip="ANALISANDO..."; chipCls="wait"; }
+  else if(ST._anaLock===a.id && ST.panelTab!=="sinais" && !(st&&st.dir)){ chip="ANALISANDO..."; chipCls="wait"; }
   let btn="Analisar Sinal", btnCls="";
   if(st&&st.step){ btn=st.step; btnCls="run"; }
   if(st&&st.dir==="PUT"){ btn="Analisar Sinal"; btnCls="sell"; }
