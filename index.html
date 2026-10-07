@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v134</title>
+<title>RyckTrader v135</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v134</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v135</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2466,7 +2466,11 @@ function backAtivos(){ ST._viewA=null; ST._deskHtmlKey=""; deskRender(); }
 function raceMs(p,ms){ return Promise.race([p, new Promise(r=>setTimeout(()=>r([]),ms))]); }
 async function openA(id){
   const a=ASSETS.find(x=>x.id===id); if(!a) return;
-  ST.asset=a; ST._viewA=id;
+  ST.asset=a; ST._viewA=id; ST._pickId=id;
+  ST.mkt=a.src==="crypto"?"crypto":"fx"; ST.filt=ST.mkt; ST.deskMkt=ST.mkt;
+  ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=id; ST._holdHtml="";
+  ST._usedIds=(ST._usedIds||[]).filter(x=>x!==id);
+  try{ runSig(); }catch(e){}
   try{ deskSetTv(a); }catch(e){}
   const box=panelBox(); if(!box) return;
   box.innerHTML="<div class='muted'>ANALISANDO</div><h1>"+a.name+"</h1><p class='sub'>"+a.ticker+"</p><div class='loadbox'><div class='ringpct' id='loadPct'>18%</div><div class='loadsteps' id='loadSteps'><div class='on'>Coletando candles...</div><div>Mapeando suporte e resistência...</div><div>Medindo momentum e volatilidade...</div><div>Montando cenários...</div></div></div>";
@@ -2696,7 +2700,7 @@ function drawA(a,st,m1,m5,m15,h1){
   const lastC=tape[0];
   const velaTxt=lastC?("Última vela "+lastC.lab+" · corpo "+Math.round(lastC.press*100)+"% do range. Próxima: "+(lastC.lab==="COMPRA"||lastC.lab==="DEFESA"?"observa defesa na retração 50/61.8":lastC.lab==="VENDA"||lastC.lab==="REJEIÇÃO"?"observa rejeição na retração 50/61.8":"espera vela de decisão")):"Sem fita.";
   const box=panelBox(); if(!box) return;
-  box.innerHTML="<div class='card'><div class='headrow'><div><div class='muted'>"+a.name+" · "+a.ticker+"</div><div class='price'>"+fmt(last,a.digits)+"</div><div class='chips'><span class='chip "+(chg>=0?"up":"dn")+"'>24h "+(chg>=0?"+":"")+chg.toFixed(2)+"%</span><span class='chip'>máx "+fmt(st.high,a.digits)+"</span><span class='chip'>mín "+fmt(st.low,a.digits)+"</span></div></div><div class='gauge' style='background:conic-gradient(#3ee08a "+(sc*3.6)+"deg,#222 0)'><b>"+sc+"</b></div></div><div class='muted'>Leitura · "+hora+"</div><div class='trends'><div class='tf'><span>M1</span><b class='"+(tm1.cls==="up"?"up":"down")+"'>"+tm1.lab+"</b></div><div class='tf'><span>M5</span><b class='"+(t5.cls==="up"?"up":"down")+"'>"+t5.lab+"</b></div><div class='tf'><span>M15</span><b class='"+(t15.cls==="up"?"up":"down")+"'>"+t15.lab+"</b></div><div class='tf'><span>H1</span><b class='"+(t1.cls==="up"?"up":"down")+"'>"+t1.lab+"</b></div></div><p class='muted' style='margin-top:8px'>"+same+"</p><div class='chips'><span class='chip'>"+estrutura+"</span><span class='chip'>"+confn+"</span><span class='chip'>"+fluxoAgora+"</span></div></div>"
+  box.innerHTML="<div id='pickEntry' class='card'><div class='muted'>ENTRADA DO ATIVO</div><b>"+(ST._pickSay||"Analisando o gráfico...")+"</b></div><div class='card'><div class='headrow'><div><div class='muted'>"+a.name+" · "+a.ticker+"</div><div class='price'>"+fmt(last,a.digits)+"</div><div class='chips'><span class='chip "+(chg>=0?"up":"dn")+"'>24h "+(chg>=0?"+":"")+chg.toFixed(2)+"%</span><span class='chip'>máx "+fmt(st.high,a.digits)+"</span><span class='chip'>mín "+fmt(st.low,a.digits)+"</span></div></div><div class='gauge' style='background:conic-gradient(#3ee08a "+(sc*3.6)+"deg,#222 0)'><b>"+sc+"</b></div></div><div class='muted'>Leitura · "+hora+"</div><div class='trends'><div class='tf'><span>M1</span><b class='"+(tm1.cls==="up"?"up":"down")+"'>"+tm1.lab+"</b></div><div class='tf'><span>M5</span><b class='"+(t5.cls==="up"?"up":"down")+"'>"+t5.lab+"</b></div><div class='tf'><span>M15</span><b class='"+(t15.cls==="up"?"up":"down")+"'>"+t15.lab+"</b></div><div class='tf'><span>H1</span><b class='"+(t1.cls==="up"?"up":"down")+"'>"+t1.lab+"</b></div></div><p class='muted' style='margin-top:8px'>"+same+"</p><div class='chips'><span class='chip'>"+estrutura+"</span><span class='chip'>"+confn+"</span><span class='chip'>"+fluxoAgora+"</span></div></div>"
   +"<div class='card'><div class='muted'>PLANO DO DESK</div><p class='muted'>"+regra+"</p></div>"
   +"<div class='card'><div class='muted'>NÍVEIS S/R</div>"+L("R3",sw.R[2],"down")+L("R2",sw.R[1],"down")+L("R1",sw.R[0],"down")+"<div class='now'><span>AGORA</span><b>"+fmt(last,a.digits)+"</b></div>"+L("S1",sw.S[0],"up")+L("S2",sw.S[1],"up")+L("S3",sw.S[2],"up")+"</div>"
   +"<div class='sc2'><div class='bull'><h3>CENÁRIO DE ALTA</h3><b>Gatilho</b><br>Defesa do suporte / Fibo 61.8 de "+(s1?fmt(s1,a.digits):"—")+" com vela de compra.<br><br><b>Invalidação</b><br>Fechamento abaixo de "+(s1?fmt(s1,a.digits):"—")+".</div><div class='bear'><h3>CENÁRIO DE BAIXA</h3><b>Gatilho</b><br>Rejeição na resistência / Fibo 61.8 de "+(r1?fmt(r1,a.digits):"—")+" com vela de venda.<br><br><b>Invalidação</b><br>Fechamento acima de "+(r1?fmt(r1,a.digits):"—")+".</div></div>"
@@ -2857,7 +2861,8 @@ async function runSig(){
   const fxAll=uniq(ASSETS.filter(a=>a.src==="fx"));
   const cryAll=uniq(ASSETS.filter(a=>a.src==="crypto"));
   let uni=mkt==="crypto"?cryAll:fxAll;
-  if(ST._pinAsset && Date.now()<(ST._holdUntil||0)){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; } else if(ST._pinAsset){ ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(ST._pinAsset)<0) ST._usedIds.push(ST._pinAsset); ST._pinAsset=""; }
+  if(ST._pickId){ const pick=ASSETS.find(x=>x.id===ST._pickId); if(pick) uni=[pick]; }
+  else if(ST._pinAsset && Date.now()<(ST._holdUntil||0)){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; } else if(ST._pinAsset){ ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(ST._pinAsset)<0) ST._usedIds.push(ST._pinAsset); ST._pinAsset=""; }
   const used=ST._usedIds||[];
   const fresh=uni.filter(a=>used.indexOf(a.id)<0);
   if(fresh.length>=6) uni=fresh;
@@ -3053,7 +3058,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v134. Entrada mais rápida. Estratégia igual.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v135. Escolhe o ativo. O robô analisa e passa a entrada dele.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
@@ -3113,6 +3118,8 @@ async function runSig(){
     +"<div class='card'><div class='muted'>MERCADO AGORA</div><div class='trends'><div class='tf'><span>ESTRUTURA</span><b class='"+(td.cls==="up"?"up":"down")+"'>"+td.lab+"</b></div><div class='tf'><span>VELA</span><b>"+vela+"</b></div><div class='tf'><span>RSI</span><b>"+rsiv+"</b></div></div><p class='muted'>Abertura "+fmt(lastB.o,best.a.digits)+" · Máx "+fmt(lastB.h,best.a.digits)+" · Mín "+fmt(lastB.l,best.a.digits)+" · Fecha "+fmt(lastB.c,best.a.digits)+"</p></div>"
 ;
   ST._holdHtml=area.innerHTML;
+  ST._pickSay=best.dir+" · "+pairName(best.a)+" · "+(best.sname||best.why||"");
+  const pe=document.getElementById("pickEntry"); if(pe) pe.innerHTML="<div class='muted'>ENTRADA DO ATIVO</div><b>"+ST._pickSay+"</b>";
   ST._pinAsset=best.a.id;
   ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
   ST._freezeHtml=area.innerHTML;
