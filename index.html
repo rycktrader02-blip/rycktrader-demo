@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v144</title>
+<title>RyckTrader v145</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v144</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v145</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1170,14 +1170,15 @@ async function candles(id,g){
       }catch(e){ bars=[]; }
     } else if(a&&a.src==="fx"){
       try{
-        const rows=await fetchJSON("https://economia.awesomeapi.com.br/json/daily/"+awCode(a)+"/90");
-        bars=awBars(rows);
-        ST.feedName="AwesomeAPI";
-      }catch(e){
+        bars=await derivHistory(fxWsCode(a), +g||60);
+        ST.feedName="Deriv";
+      }catch(e){ bars=[]; }
+      if(!bars||bars.length<20){
         try{
-          bars=await derivHistory(fxWsCode(a), +g||60);
-          ST.feedName="Deriv";
-        }catch(e2){ bars=[]; }
+          const rows=await fetchJSON("https://economia.awesomeapi.com.br/json/daily/"+awCode(a)+"/90");
+          const daily=awBars(rows);
+          if(daily&&daily.length){ bars=daily; ST.feedName="AwesomeAPI"; }
+        }catch(e2){}
       }
     } else {
       const gid=a&&a.id?a.id:id;
@@ -1496,7 +1497,7 @@ function gateSig(sid, bars, ev){
 }
 
 function evalSraw(id,bars){
- if(!bars||bars.length<30)return{dir:null,conf:0,why:"Velas insuficientes"};
+ if(!bars||bars.length<8)return{dir:null,conf:0,why:"Velas insuficientes"};
  const c=bars.map(b=>b.c),last=bars.at(-1),prev=bars.at(-2);
  if(id==="bb"){const n=20,i=c.length-1,mid=sma(c,n)[i];if(!mid)return{dir:null,conf:0,why:"Bollinger aquecendo"};const u=mid+2*sd(c.slice(i-n+1)),l=mid-2*sd(c.slice(i-n+1));if(last.l<=l&&last.c>l&&last.c>=last.o)return{dir:"CALL",conf:76,why:"Pavio na banda inferior e fechamento de alta.",touch:l};if(last.h>=u&&last.c<u&&last.c<=last.o)return{dir:"PUT",conf:76,why:"Pavio na banda superior e fechamento de baixa.",touch:u};return{dir:null,conf:0,why:"Sem toque nas bandas."};}
  if(id==="eng"){const aT=Math.max(prev.o,prev.c),aB=Math.min(prev.o,prev.c),bT=Math.max(last.o,last.c),bB=Math.min(last.o,last.c);if(prev.c<prev.o&&last.c>last.o&&bB<=aB&&bT>=aT)return{dir:"CALL",conf:80,why:"Engolfo de alta.",touch:last.c};if(prev.c>prev.o&&last.c<last.o&&bB<=aB&&bT>=aT)return{dir:"PUT",conf:80,why:"Engolfo de baixa.",touch:last.c};return{dir:null,conf:0,why:"Sem engolfo neste candle."};}
@@ -3653,8 +3654,8 @@ function deskRender(){
       if(chip){
         if(st&&st.dir==="PUT"){ chip.textContent="VENDA"; chip.className="ai-chip sell"; }
         else if(st&&st.dir==="CALL"){ chip.textContent="COMPRA"; chip.className="ai-chip buy"; }
-        else if(st&&st.wait){ chip.textContent="ANALISANDO..."; chip.className="ai-chip wait"; }
-        else { chip.textContent="ANALISANDO..."; chip.className="ai-chip"; }
+        else if(st&&st.wait && ST._anaLock===a.id){ chip.textContent="ANALISANDO..."; chip.className="ai-chip wait"; }
+        else { chip.textContent="AGUARDANDO"; chip.className="ai-chip"; }
       }
       if(btn){
         if(st&&st.step && !st.dir){ btn.textContent=st.step; btn.className="ai-btn run"; btn.disabled=false; }
