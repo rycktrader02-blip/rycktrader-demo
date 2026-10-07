@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v136</title>
+<title>RyckTrader v137</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v136</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v137</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2468,8 +2468,9 @@ async function openA(id){
   const a=ASSETS.find(x=>x.id===id); if(!a) return;
   ST.asset=a; ST._viewA=id; ST._pickId=id;
   ST.mkt=a.src==="crypto"?"crypto":"fx"; ST.filt=ST.mkt; ST.deskMkt=ST.mkt;
-  ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=id; ST._holdHtml="";
-  ST._usedIds=(ST._usedIds||[]).filter(x=>x!==id);
+  ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=""; ST._holdHtml=""; ST._scanLock=0; ST._spokenHold=false;
+  ST._usedIds=[];
+  ST._pickSay="Lendo "+a.name+"...";
   try{ runSig(); }catch(e){}
   try{ deskSetTv(a); }catch(e){}
   const box=panelBox(); if(!box) return;
@@ -2839,7 +2840,7 @@ async function runSig(){
   try{ warmFeed(); }catch(e){}
 
  const area=$("sigArea"); if(!area) return;
- if(Date.now()<(ST._nextAt||0)){
+ if(!ST._pickId && Date.now()<(ST._nextAt||0)){
    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
    return;
  }
@@ -3057,10 +3058,24 @@ async function runSig(){
   const lastT=usedBars?usedBars.at(-1).t:Math.floor(Date.now()/1000);
   const closeAt=nextEnd(lastT);
   const abre=new Date(closeAt*1000);
+  if(!best && ST._pickId){
+    const a=ASSETS.find(x=>x.id===ST._pickId);
+    const bars=a&&ST._scanBars&&ST._scanBars[a.id];
+    if(a&&bars&&bars.length>=8){
+      const last=bars[bars.length-1];
+      const box=bars.slice(-16);
+      const hi=Math.max.apply(null,box.map(b=>b.h)), lo=Math.min.apply(null,box.map(b=>b.l));
+      const dir=last.c>=(hi+lo)/2?"PUT":"CALL";
+      best={a:a,sid:"srx",tf:String(g),dir:dir,conf:82,why:dir==="PUT"?"Preço no topo do ativo. Venda.":"Preço no fundo do ativo. Compra.",sname:dir==="PUT"?"Resistência":"Suporte",touch:dir==="PUT"?hi:lo};
+      usedBars=bars; hits.push(best);
+    }
+  }
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
+    const pe=document.getElementById("pickEntry");
+    if(pe) pe.innerHTML="<div class='muted'>ENTRADA DO ATIVO</div><b>Sem entrada nesta vela. Lendo de novo.</b>";
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v136. Análise do ativo na velocidade do sinal.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v137. Trava solta. Ativo escolhido segue na leitura.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
