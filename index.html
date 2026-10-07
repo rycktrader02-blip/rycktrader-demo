@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v145</title>
+<title>RyckTrader v146</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v145</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v146</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2731,8 +2731,20 @@ function showPanelTab(tab){
   deskCloseDrawer();
   const list=$("aiList"), sig=$("aiSig"), tf=$("aiTf"), mkt=$("aiMkt");
   const onSig=ST.panelTab==="sinais";
-  if(onSig){ ST._pickId=""; }
-  else { ST._pickId=""; ST._scanLock=0; }
+  ST._pickId="";
+  if(onSig){
+    ST._viewA=null;
+    ST._assetOnly="";
+    ST._anaLock="";
+    if(list) list.innerHTML="";
+  } else {
+    ST._scanLock=0;
+    ST._nextAt=0;
+    ST._entryOpen=false;
+    ST._pinAsset="";
+    ST._deskHtmlKey="";
+    deskRender();
+  }
   if(list) list.style.display=onSig?"none":"block";
   if(sig) sig.style.display=onSig?"block":"none";
   if(tf) tf.style.display=onSig?"none":"flex";
@@ -3143,7 +3155,7 @@ async function runSig(){
 ;
   ST._holdHtml=area.innerHTML;
   ST._pickSay=best.dir+" · "+pairName(best.a)+" · "+(best.sname||best.why||"");
-  const pe=document.getElementById("pickEntry"); if(pe && ST.panelTab==="sinais") pe.innerHTML="<div class='muted'>ENTRADA DO ATIVO</div><b>"+ST._pickSay+"</b>";
+  if(ST.panelTab==="sinais"){ const pe=document.getElementById("pickEntry"); if(pe) pe.innerHTML=""; }
   ST._pinAsset=best.a.id; ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id); if(ST._usedIds.length>8) ST._usedIds=ST._usedIds.slice(-4);
   ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
   ST._freezeHtml=area.innerHTML;
