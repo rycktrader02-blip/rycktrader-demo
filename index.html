@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v133</title>
+<title>RyckTrader v134</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v133</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v134</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1146,7 +1146,7 @@ async function candles(id,g){
   const rawA=assetBy(id);
   const a=feedOf(rawA);
   const k=id+"_"+g;
-  if(ST.cache[k]&&Date.now()-ST.cache[k].ts<20000) return ST.cache[k].bars;
+  if(ST.cache[k]&&Date.now()-ST.cache[k].ts<45000) return ST.cache[k].bars;
   ST._inflight=ST._inflight||{};
   if(ST._inflight[k]) return ST._inflight[k];
   const job=(async()=>{
@@ -3009,9 +3009,9 @@ async function runSig(){
     await new Promise(resolve=>{
       let open=uni.length, done=false;
       const finish=()=>{ if(!done){ done=true; resolve(); } };
-      const timer=setTimeout(finish, 1800);
+      const timer=setTimeout(finish, 650);
       uni.forEach(a=>{
-        withT(candles(a.id,g), 1600).then(raw=>{
+        withT(candles(a.id,g), 550).then(raw=>{
           if(!done && raw && raw.length){ take(a, raw); if(best){ clearTimeout(timer); finish(); } }
         }).finally(()=>{ open--; if(open<=0){ clearTimeout(timer); finish(); } });
       });
@@ -3025,7 +3025,7 @@ async function runSig(){
     best.tf=String(g);
     const confirmG=ST._pairMode==="m5m1"?60:300;
     try{
-      const cb=await withT(candles(best.a.id, confirmG), 1200);
+      const cb=await withT(candles(best.a.id, confirmG), 400);
       const last=cb && cb.at(-1);
       const prev=cb && cb.at(-2);
       if(last && prev){
@@ -3053,7 +3053,7 @@ async function runSig(){
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
-    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v133. Entrada na mesma vela. Sem perseguir a que já andou.</p>";
+    else area.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>v134. Entrada mais rápida. Estratégia igual.</p>";
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
     ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
