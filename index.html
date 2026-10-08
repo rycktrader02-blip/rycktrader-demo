@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v152</title>
+<title>RyckTrader v153</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v152</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v153</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1067,7 +1067,7 @@ function derivHistory(code, gran){
   if(![60,120,180,300,600,900,1800,3600,14400,86400].includes(gran)) gran=300;
   return derivSock().then(ws=>new Promise((resolve,reject)=>{
     const id=++_did;
-    const to=setTimeout(()=>{ delete _dcb[id]; reject(new Error("timeout FX")); },2800);
+    const to=setTimeout(()=>{ delete _dcb[id]; reject(new Error("timeout FX")); },800);
     _dcb[id]=j=>{
       clearTimeout(to);
       if(j.error){ reject(new Error(j.error.message||"FX")); return; }
@@ -2515,8 +2515,8 @@ async function openA(id){
     if(c1&&c1.bars) paint({last:c1.bars.at(-1).c,open:c1.bars.at(-1).o,high:c1.bars.at(-1).h,low:c1.bars.at(-1).l}, c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars);
     const [st,m1,m5]=await Promise.all([
       raceMs(stats(a.id).catch(()=>({})),400),
-      raceMs(candles(a.id,60).catch(()=>[]), a.src==="fx"?2200:700),
-      raceMs(candles(a.id,300).catch(()=>[]), a.src==="fx"?2200:700)
+      raceMs(candles(a.id,60).catch(()=>[]), a.src==="fx"?900:700),
+      raceMs(candles(a.id,300).catch(()=>[]), a.src==="fx"?900:700)
     ]);
     pct(98);
     const use1=(m1&&m1.length>=20)?m1:local1;
@@ -3156,11 +3156,11 @@ async function runSig(){
   const gap=lastBar&&prevBar?Math.abs(lastBar.t-prevBar.t):60;
   const realMin=gap>0 && gap<=180;
   const agree=lastBar && ((best.dir==="CALL" && lastBar.c>=lastBar.o) || (best.dir==="PUT" && lastBar.c<=lastBar.o));
-  if(best.a&&best.a.src==="fx" && (!realMin || !agree)){
+  if(best.a&&best.a.src==="fx" && lastBar && !agree){
     ST._usedIds=ST._usedIds||[];
     if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id);
     area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false;
-    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 1500);
+    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 400);
     return;
   }
   const holdSec=45; ST._nextAt=Date.now()+holdSec*1000;
