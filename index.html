@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v149</title>
+<title>RyckTrader v150</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -581,6 +581,16 @@ html,body{height:100%;width:100%;overflow:hidden;margin:0;background:#000}
 .ai-sig .robo-wrap{margin:0 0 8px}
 .ai-sig .robo-face{width:104px;height:112px}
 .ai-sig h1{font-size:16px;margin:0 0 6px}
+.ai-row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer}
+.ai-row:hover{background:rgba(255,255,255,.04)}
+.ai-row .flags{font-size:16px;letter-spacing:-4px;width:36px}
+.ai-row .mid{display:flex;flex-direction:column;flex:1;min-width:0}
+.ai-row .mid b{font-size:14px;color:#e8eefc}
+.ai-row .px{font-size:12px;color:#9aa6bd}
+.ai-row .px.up{color:#3dcf7a}
+.ai-row .chg{font-size:13px;font-weight:700;min-width:58px;text-align:right}
+.ai-row .chg.up{color:#3dcf7a}
+.ai-row .chg.dn{color:#ff5d5d}
 .ai-card{
   position:relative;border-radius:16px;margin-bottom:10px;overflow:hidden;
   background:linear-gradient(180deg,#18233c,#10182b);
@@ -770,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v149</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v150</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3623,25 +3633,23 @@ async function copyVexEntry(id){
     setTimeout(()=>{ b.textContent="Copiar entrada"; b.classList.remove("ok"); },2200);
   });
 }
+function pairFlags(a){
+  const map={USD:"🇺🇸",EUR:"🇪🇺",GBP:"🇬🇧",JPY:"🇯🇵",AUD:"🇦🇺",CAD:"🇨🇦",CHF:"🇨🇭",NZD:"🇳🇿",BTC:"₿",ETH:"◆",BNB:"◆",XRP:"◆",SOL:"◆",ADA:"◆",DOGE:"◆",SUI:"◆"};
+  const label=deskLabel(a);
+  if(a.src==="fx" && label.includes("/")){
+    const [b,q]=label.split("/");
+    return (map[b]||"•")+(map[q]||"");
+  }
+  const k=String(a.ticker||a.id||"").replace("USDT","").replace("USD","").slice(0,4);
+  return map[k]||"◆";
+}
 function deskCardHtml(a){
   const quote=ST._deskPx||{};
-  const st=ST._deskSig&&ST._deskSig[a.id];
   const px=quote[a.id];
   const pxTxt=px?fmt(px.last,a.digits):"—";
   const up=px?px.chg>=0:true;
-  let chip="AGUARDANDO", chipCls="";
-  if(st&&st.dir==="PUT"){ chip="VENDA"; chipCls="sell"; }
-  else if(st&&st.dir==="CALL"){ chip="COMPRA"; chipCls="buy"; }
-  else if(ST._anaLock===a.id && ST.panelTab!=="sinais" && !(st&&st.dir)){ chip="ANALISANDO..."; chipCls="wait"; }
-  let btn="Analisar Sinal", btnCls="";
-  if(st&&st.step){ btn=st.step; btnCls="run"; }
-  if(st&&st.dir==="PUT"){ btn="Analisar Sinal"; btnCls="sell"; }
-  if(st&&st.dir==="CALL"){ btn="Analisar Sinal"; btnCls="buy"; }
-  const conf=st&&st.conf?("<div class='ai-conf'>CONFLUÊNCIA: "+st.conf+"%</div>"):"";
   const chg=px&&isFinite(px.chg)?((px.chg>=0?"+":"")+px.chg.toFixed(2)+"%"):"—";
-  if(!st || (!st.dir && !(st.wait && ST._anaLock===a.id))){ chip="AGUARDANDO"; chipCls=""; }
-  const mkt=a.src==="crypto"?"Cripto":"Forex";
-  return "<div class='ai-card' data-id='"+a.id+"'><div class='row1'><span class='sym'>"+deskLabel(a)+"</span><span class='px "+(up?"up":"")+"'>"+pxTxt+"</span></div><div class='ai-meta'><div>DURAÇÃO<div><b>"+(ST.tf==="300"?"5 MINUTOS":"1 MINUTO")+"</b></div></div><div style='text-align:right'>TENDÊNCIA DE:<div><span class='ai-chip "+chipCls+"'>"+chip+"</span></div></div></div><div class='ai-in'><span>ENTRADA EM:</span><b class='ai-eta'>"+deskNextIn()+"</b></div><p class='ai-hint'>Toque em Analisar Sinal</p><button class='ai-btn "+btnCls+"' data-go='"+a.id+"'>"+btn+"</button>"+conf+(st&&st.note?("<p class='ai-hint'>"+st.note+"</p>"):"")+"</div>";
+  return "<div class='ai-row' data-id='"+a.id+"'><span class='flags'>"+pairFlags(a)+"</span><span class='mid'><b>"+deskLabel(a)+"</b><span class='px "+(up?"up":"")+"'>"+pxTxt+"</span></span><span class='chg "+(up?"up":"dn")+"'>"+chg+"</span></div>";
 }
 function deskBindCards(box){
   box.querySelectorAll("[data-go]").forEach(bt=>bt.onclick=e=>{
@@ -3649,18 +3657,18 @@ function deskBindCards(box){
     openA(bt.dataset.go);
   });
   box.querySelectorAll("[data-copy]").forEach(bt=>bt.onclick=e=>{ e.stopPropagation(); copyVexEntry(bt.dataset.copy); });
-  box.querySelectorAll(".ai-card").forEach(cd=>cd.onclick=()=>openA(cd.dataset.id));
+  box.querySelectorAll(".ai-row").forEach(cd=>cd.onclick=()=>openA(cd.dataset.id));
 }
 function deskPatchQuotes(){
   const box=$("aiList"); if(!box) return;
   const quote=ST._deskPx||{};
-  box.querySelectorAll(".ai-card").forEach(cd=>{
+  box.querySelectorAll(".ai-row").forEach(cd=>{
     const a=ASSETS.find(x=>x.id===cd.dataset.id); if(!a) return;
     const px=quote[a.id]; if(!px) return;
     const el=cd.querySelector(".px");
     if(el){ el.textContent=fmt(px.last,a.digits); el.classList.toggle("up", px.chg>=0); }
-    const eta=cd.querySelector(".ai-eta");
-    if(eta) eta.textContent=deskNextIn();
+    const ch=cd.querySelector(".chg");
+    if(ch){ const up=px.chg>=0; ch.textContent=(up?"+":"")+px.chg.toFixed(2)+"%"; ch.className="chg "+(up?"up":"dn"); }
   });
 }
 function deskRender(){
@@ -3668,7 +3676,7 @@ function deskRender(){
   const box=$("aiList"); if(!box) return;
   const rows=deskPairs();
   const key=rows.map(a=>a.id).join(",")+"|"+(ST.tf||"60")+"|"+(ST.deskMkt||"all");
-  if(ST._deskHtmlKey===key && box.querySelector(".ai-card")){
+  if(ST._deskHtmlKey===key && box.querySelector(".ai-row")){
     deskPatchQuotes();
     box.querySelectorAll(".ai-card").forEach(cd=>{
       const a=ASSETS.find(x=>x.id===cd.dataset.id); if(!a) return;
