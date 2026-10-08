@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v150</title>
+<title>RyckTrader v151</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v150</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v151</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2882,11 +2882,14 @@ async function runSig(){
   try{ warmFeed(); }catch(e){}
 
  const area=$("sigArea"); if(!area) return;
+ if(ST._scanLock && Date.now()-(ST._scanAt||0)>8000) ST._scanLock=0;
  if(!ST._pickId && Date.now()<(ST._nextAt||0)){
    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
+   if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; ST._entryOpen=false; ST._scanLock=0; ST._pinAsset=""; try{ runSig(); }catch(e){} }, Math.max(800,(ST._nextAt||Date.now())-Date.now()));
    return;
  }
  if(ST._scanLock) return;
+ ST._scanAt=Date.now();
  ST._scanLock=1;
  ST._scanGen=(ST._scanGen||0)+1;
  area.dataset.busy="1";
@@ -3148,7 +3151,7 @@ async function runSig(){
     if(ST._holdHtml) area.innerHTML=ST._holdHtml;
     area.dataset.busy=""; ST._scanLock=0; return;
   }
-  const holdSec=ST.tf==="300"?300:60; ST._nextAt=(Math.floor(Date.now()/1000/holdSec)+1)*holdSec*1000;
+  const holdSec=45; ST._nextAt=Date.now()+holdSec*1000;
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._scanGen=(ST._scanGen||0)+1;
@@ -3201,7 +3204,7 @@ async function runSig(){
   },250);
   ST.signal={closeAt:Math.floor(ST._holdUntil/1000),dir:best.dir,asset:best.a.id,name:pairName(best.a)};
   if(ST._arm) clearTimeout(ST._arm);
-  ST._arm=setTimeout(()=>{ ST._arm=null; if(Date.now()< (ST._nextAt||0)-500) return; ST._entryOpen=false; ST._scanLock=0; try{ runSig(); }catch(e){} }, Math.max(1000,(ST._nextAt||Date.now())-Date.now()));
+  ST._arm=setTimeout(()=>{ ST._arm=null; ST._entryOpen=false; ST._scanLock=0; ST._pinAsset=""; ST._nextAt=0; try{ runSig(); }catch(e){} }, Math.max(1000,(ST._nextAt||Date.now())-Date.now()+400));
   if(ST._tick) clearInterval(ST._tick);
   const clock=d=>{ const x=new Date(d); return String(x.getHours()).padStart(2,"0")+":"+String(x.getMinutes()).padStart(2,"0")+":"+String(x.getSeconds()).padStart(2,"0"); };
   ST._tick=setInterval(()=>{
@@ -3213,6 +3216,7 @@ async function runSig(){
   },250);
  }catch(e){ if(!ST._entryOpen) area.innerHTML="<p class='muted'>Feed: "+e.message+"</p>"; }
  area.dataset.busy=""; ST._scanLock=0;
+ if(!ST._entryOpen && ST.panelTab==="sinais" && !ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 4000);
 }
 
 function book(){
