@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v169</title>
+<title>RyckTrader v170</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v169</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v170</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3029,6 +3029,11 @@ async function runSig(){
       const trendDn=dnN>=upN+1, trendUp=upN>=dnN+1;
       if(ev.dir==="CALL" && last.c<last.o) continue;
       if(ev.dir==="PUT" && last.c>last.o) continue;
+      const rng=Math.max(last.h-last.l,1e-12);
+      const body=Math.abs(last.c-last.o)/rng;
+      if(body<0.34) continue;
+      if(ev.dir==="CALL" && posR>0.78) continue;
+      if(ev.dir==="PUT" && posR<0.22) continue;
       if(ev.dir==="CALL" && runG>=3) continue;
       if(ev.dir==="PUT" && runR>=3) continue;
       if(sid==="cnt_sol" && ev.dir==="CALL" && runG<3) continue;
@@ -3102,16 +3107,16 @@ async function runSig(){
         } else if(soldiers && ((last.c-lo)/span)<0.78){
           best={a:a,sid:"cnt_sol",tf:tf,dir:"CALL",conf:88,why:"Três velas verdes seguidas, fechando mais alto.",sname:"3 soldados",touch:last.c};
           usedBars=bars;
-        } else if(trendDn && last.c<last.o && reds>=2 && reds<4 && ((last.c-lo)/span)>0.38){
-          best={a:a,sid:"eng",tf:tf,dir:"PUT",conf:86,why:"Gráfico caindo e a vela fechou vermelha.",sname:"Fluxo de baixa",touch:last.c};
+        } else if(trendDn && last.c<last.o && reds>=1 && reds<=2 && ((last.c-lo)/span)>0.42 && ((last.c-lo)/span)<0.82 && Math.abs(last.c-last.o)/Math.max(last.h-last.l,1e-12)>=0.4){
+          best={a:a,sid:"eng",tf:tf,dir:"PUT",conf:90,why:"Queda no gráfico e a vela atual vermelha, sem estar no fundo.",sname:"Fluxo de baixa",touch:last.c};
           usedBars=bars;
-        } else if(trendUp && last.c>last.o && greens>=2 && greens<4 && ((last.c-lo)/span)<0.62){
-          best={a:a,sid:"eng",tf:tf,dir:"CALL",conf:86,why:"Gráfico subindo e a vela fechou verde.",sname:"Fluxo de alta",touch:last.c};
+        } else if(trendUp && last.c>last.o && greens>=1 && greens<=2 && ((last.c-lo)/span)<0.58 && ((last.c-lo)/span)>0.18 && Math.abs(last.c-last.o)/Math.max(last.h-last.l,1e-12)>=0.4){
+          best={a:a,sid:"eng",tf:tf,dir:"CALL",conf:90,why:"Alta no gráfico e a vela atual verde, sem estar no topo.",sname:"Fluxo de alta",touch:last.c};
           usedBars=bars;
-        } else if(last.h>=hi-span*0.08 && last.c<last.o && last.c>lo+span*0.35 && upW>=0.4 && reds<2 && !trendUp){
+        } else if(last.h>=hi-span*0.05 && last.c<last.o && last.c>lo+span*0.42 && upW>=0.45 && reds<2 && !trendUp){
           best={a:a,sid:"srx",tf:tf,dir:"PUT",conf:90,why:"Pavio na resistência. Venda na linha.",sname:"Resistência",touch:hi};
           usedBars=bars;
-        } else if(last.l<=lo+span*0.08 && last.c>last.o && last.c<hi-span*0.35 && dnW>=0.4 && greens<2 && !trendDn){
+        } else if(last.l<=lo+span*0.05 && last.c>last.o && last.c<hi-span*0.42 && dnW>=0.45 && greens<2 && !trendDn){
           best={a:a,sid:"srx",tf:tf,dir:"CALL",conf:90,why:"Pavio no suporte. Compra na linha.",sname:"Suporte",touch:lo};
           usedBars=bars;
         }
