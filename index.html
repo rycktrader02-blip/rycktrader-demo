@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v170</title>
+<title>RyckTrader v171</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v170</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v171</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1216,8 +1216,9 @@ async function candles(id,g){
     }
   }
   if(!bars||!bars.length){
-    bars=synthBars(id,g,80);
-    ST.feedName="Local";
+    ST._fakeFeed=ST._fakeFeed||{}; ST._fakeFeed[id]=Date.now();
+    bars=[];
+    ST.feedName="sem-feed";
   }
   ST.cache[k]={ts:Date.now(),bars}; return bars;
   })();
@@ -2999,6 +3000,12 @@ async function runSig(){
   ST._firedSid=ST._firedSid||{};
   function scorePair(a,bars,tf){
     if(!bars||bars.length<5) return;
+    if(ST._fakeFeed && ST._fakeFeed[a.id] && Date.now()-ST._fakeFeed[a.id]<120000) return;
+    const px0=bars.at(-1).c;
+    const nm0=String(a.name||"");
+    if(nm0==="CAD/CHF" && (px0<0.45 || px0>0.85)) return;
+    if(nm0==="EUR/USD" && (px0<0.9 || px0>1.3)) return;
+    if(nm0==="GBP/USD" && (px0<1.05 || px0>1.55)) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(!ST._pickId && (ST._usedIds||[]).length < 8 && (ST._usedIds||[]).indexOf(a.id)>=0) return;
     const fast=["eng","pad","pin","star","hmr","cnt_sol","flag","tri","bos","pull","dark","tw","sfp","ttop","hs","ihs","mdoj","qsd","krev","ob","fvg","pa","srx"];
@@ -3318,6 +3325,17 @@ async function runSig(){
     return;
   }
   const live=usedBars&&usedBars.at(-1);
+  const nome=String(best.sname||"");
+  if(/corvos/i.test(nome)){
+    const a3=usedBars.at(-3), b3=usedBars.at(-2), c3=usedBars.at(-1);
+    const ok=a3&&b3&&c3&&a3.c<a3.o&&b3.c<b3.o&&c3.c<c3.o&&b3.c<a3.c&&c3.c<b3.c;
+    if(!ok){ area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0; if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700); return; }
+  }
+  if(/soldados/i.test(nome)){
+    const a3=usedBars.at(-3), b3=usedBars.at(-2), c3=usedBars.at(-1);
+    const ok=a3&&b3&&c3&&a3.c>a3.o&&b3.c>b3.o&&c3.c>c3.o&&b3.c>a3.c&&c3.c>b3.c;
+    if(!ok){ area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0; if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700); return; }
+  }
   if(live && ((best.dir==="CALL" && live.c<live.o) || (best.dir==="PUT" && live.c>live.o))){
     area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0;
     if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700);
