@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v154</title>
+<title>RyckTrader v155</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v154</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v155</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2912,7 +2912,7 @@ async function runSig(){
   if(ST._pinAsset && Date.now()<(ST._holdUntil||0) && ST.panelTab==="sinais"){ const pin=ASSETS.find(x=>x.id===ST._pinAsset); if(pin && pin.src===mkt) uni=[pin]; } else if(ST._pinAsset && ST.panelTab==="sinais"){ ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(ST._pinAsset)<0) ST._usedIds.push(ST._pinAsset); ST._pinAsset=""; }
   const used=ST._usedIds||[];
   const fresh=uni.filter(a=>used.indexOf(a.id)<0);
-  if(fresh.length>=6) uni=fresh;
+  if(fresh.length) uni=fresh; else ST._usedIds=[];
   if(uni.length>1){
     ST._pairRot=(ST._pairRot||0)%uni.length;
     uni=uni.slice(ST._pairRot).concat(uni.slice(0, ST._pairRot));
@@ -3160,8 +3160,7 @@ async function runSig(){
   const greens=seq.filter(b=>b.c>b.o).length;
   const reds=seq.filter(b=>b.c<b.o).length;
   const chase=(best.dir==="CALL" && greens>=3) || (best.dir==="PUT" && reds>=3);
-  const against=(best.dir==="PUT" && greens>=3) || (best.dir==="CALL" && reds>=3);
-  if(best.a&&best.a.src==="fx" && (chase || against || (lastBar && !agree))){
+  if(best.a&&best.a.src==="fx" && (chase || (lastBar && !agree))){
     ST._usedIds=ST._usedIds||[];
     if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id);
     area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false;
@@ -3173,7 +3172,7 @@ async function runSig(){
     area.dataset.busy=""; ST._scanLock=0;
     return;
   }
-  const holdSec=60; ST._nextAt=Date.now()+holdSec*1000;
+  const holdSec=35; ST._nextAt=Date.now()+holdSec*1000;
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._scanGen=(ST._scanGen||0)+1;
@@ -3203,7 +3202,7 @@ async function runSig(){
   ST._holdHtml=area.innerHTML;
   ST._pickSay=best.dir+" · "+pairName(best.a)+" · "+(best.sname||best.why||"");
   if(ST.panelTab==="sinais"){ const pe=document.getElementById("pickEntry"); if(pe) pe.innerHTML=""; }
-  ST._pinAsset=best.a.id; ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id); if(ST._usedIds.length>8) ST._usedIds=ST._usedIds.slice(-4);
+  ST._pinAsset=best.a.id; ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id); if(ST._usedIds.length>24) ST._usedIds=ST._usedIds.slice(-24);
   ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
   ST._freezeHtml=area.innerHTML;
   ST._freezeSay=(document.getElementById("roboSay")||{}).textContent||"";
