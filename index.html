@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v168</title>
+<title>RyckTrader v169</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v168</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v169</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2975,7 +2975,7 @@ async function runSig(){
       const live=(ST._scanRaw&&ST._scanRaw[ST._scanAid])||bars;
       if(sid==="ari") return ariFluxo(live&&live.length?live:bars);
       
-      return evalS(sid,closedBars(bars)||bars);
+      return evalS(sid,bars);
     }catch(e){ return {dir:null,conf:0}; }
   }
   function lightPick(bars){
@@ -3303,7 +3303,22 @@ async function runSig(){
     area.dataset.busy=""; ST._scanLock=0;
     return;
   }
-  const holdSec=60; ST._nextAt=Date.now()+holdSec*1000; ST._pinAsset="";
+  const perSec=+ST.tf||60;
+  const nowSec=Date.now()/1000;
+  const candleOpen=Math.floor(nowSec/perSec)*perSec;
+  const leftSec=Math.floor(candleOpen+perSec-nowSec);
+  if(leftSec<28){
+    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0;
+    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, Math.max(800,(leftSec+2)*1000));
+    return;
+  }
+  const live=usedBars&&usedBars.at(-1);
+  if(live && ((best.dir==="CALL" && live.c<live.o) || (best.dir==="PUT" && live.c>live.o))){
+    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0;
+    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700);
+    return;
+  }
+  const holdSec=leftSec; ST._nextAt=(candleOpen+perSec)*1000; ST._pinAsset="";
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._lastShown=best.a.id;
@@ -3338,7 +3353,7 @@ async function runSig(){
   ST._pickSay=best.dir+" · "+pairName(best.a)+" · "+(best.sname||best.why||"");
   if(ST.panelTab==="sinais"){ const pe=document.getElementById("pickEntry"); if(pe) pe.innerHTML=""; }
   ST._pinAsset=""; ST._lastShown=best.a.id; ST._pairSince=ST._pairSince||Date.now();
-  ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
+  ST._entryOpen=true; ST._holdUntil=ST._nextAt;
   ST._freezeHtml=area.innerHTML;
   ST._freezeSay=(document.getElementById("roboSay")||{}).textContent||"";
   ST._holdUntil=ST._nextAt;
