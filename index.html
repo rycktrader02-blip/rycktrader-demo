@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v165</title>
+<title>RyckTrader v166</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v165</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v166</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2894,18 +2894,13 @@ function armRot(){
   if(ST._rotWatch) return;
   ST._rotWatch=setInterval(()=>{
     if(ST.panelTab && ST.panelTab!=="sinais") return;
-    if(!ST._pairSince || Date.now()-ST._pairSince<60000) return;
-    const mkt=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
-    const list=ASSETS.filter(a=>a.src===mkt && a.id!==ST._lastShown);
-    if(!list.length) return;
-    ST._rotIx=(ST._rotIx||0)%list.length;
-    const nxt=list[ST._rotIx]; ST._rotIx++;
-    ST._forceId=nxt.id;
-    ST._lastShown=nxt.id;
-    ST._pairSince=Date.now();
-    ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=""; ST._scanLock=0; ST._holdHtml="";
+    if(ST._entryOpen && ST._holdUntil && Date.now()<ST._holdUntil) return;
+    if(ST._pairSince && Date.now()-ST._pairSince<55000 && ST._entryOpen) return;
+    if(ST._scanLock && Date.now()-(ST._scanAt||0)<4000) return;
+    ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=""; ST._scanLock=0;
     if(ST._arm){ clearTimeout(ST._arm); ST._arm=null; }
     if(ST._freezeT){ clearInterval(ST._freezeT); ST._freezeT=null; }
+    ST._mustEmit=1;
     try{ runSig(); }catch(e){}
   },1000);
 }
@@ -2936,7 +2931,7 @@ async function runSig(){
   const picked=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
   const mkt=picked;
   ST.mkt=mkt; ST.filt=mkt; ST.deskMkt=mkt;
-  if(!ST._holdHtml) area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+"</div><p class='muted'>Lendo todos os pares. Sai a melhor do momento.</p>";
+  if(!ST._holdHtml && !ST._mustEmit) area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+"</div><p class='muted'>Lendo o mercado. A próxima sai em segundos.</p>";
   const seenT=new Set();
   const uniq=list=>list.filter(a=>{
     const k=String(a.ticker||a.id||"").replace("/","");
@@ -3165,8 +3160,12 @@ async function runSig(){
       const runG=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c>bars[i].o;i--) n++; return n;})();
       const runR=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c<bars[i].o;i--) n++; return n;})();
       let dir=null, sc=0;
-      if(pos>=0.72 && runG<2){ dir="PUT"; sc=pos; }
-      else if(pos<=0.28 && runR<2){ dir="CALL"; sc=1-pos; }
+      const rng=Math.max(last.h-last.l,1e-12);
+      const upW=(last.h-Math.max(last.o,last.c))/rng;
+      const dnW=(Math.min(last.o,last.c)-last.l)/rng;
+      const red=last.c<last.o, green=last.c>last.o;
+      if(pos>=0.62 && runG<2 && (red || upW>=0.35) && !green){ dir="PUT"; sc=pos+upW; }
+      else if(pos<=0.38 && runR<2 && (green || dnW>=0.35) && !red){ dir="CALL"; sc=(1-pos)+dnW; }
       if(!dir) continue;
       if(sc>softScore){
         softScore=sc;
@@ -3177,11 +3176,34 @@ async function runSig(){
     if(soft){ best=soft; usedBars=softBars; hits.push(soft); }
   }
   if(!best){
+    let fb=null, fbBars=null, fbSc=-1;
+    for(const a of uni){
+      if(a.id===ST._lastShown) continue;
+      const bars=(ST._scanBars&&ST._scanBars[a.id])||(ST._barCache&&ST._barCache[a.id+"|"+g]&&ST._barCache[a.id+"|"+g].raw);
+      if(!bars||bars.length<8) continue;
+      const last=bars[bars.length-1];
+      if(!(last&&last.c>0)) continue;
+      const box=bars.slice(-10,-1);
+      const bh=Math.max.apply(null,box.map(b=>b.h)), bl=Math.min.apply(null,box.map(b=>b.l));
+      const pos=(last.c-bl)/Math.max(bh-bl,1e-12);
+      const rng=Math.max(last.h-last.l,1e-12);
+      const upW=(last.h-Math.max(last.o,last.c))/rng;
+      const dnW=(Math.min(last.o,last.c)-last.l)/rng;
+      let dir=null, sc=0, why="", sname="";
+      if(pos>=0.55 && last.c<=last.o){ dir="PUT"; sc=pos+upW; why="Topo do momento. Venda na rejeição."; sname="Resistência"; }
+      else if(pos<=0.45 && last.c>=last.o){ dir="CALL"; sc=(1-pos)+dnW; why="Fundo do momento. Compra na rejeição."; sname="Suporte"; }
+      if(!dir || sc<=fbSc) continue;
+      fbSc=sc; fbBars=bars;
+      fb={a:a,sid:"srx",tf:String(g),dir:dir,conf:80,why:why,sname:sname,touch:last.c,_rank:80+sc*10,bars:bars};
+    }
+    if(fb){ best=fb; usedBars=fbBars; hits.push(fb); }
+  }
+  if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     ST._pickId=""; ST._pinAsset=""; ST._entryOpen=false;
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 900);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 700);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
@@ -3219,7 +3241,7 @@ async function runSig(){
   const greens=seq.filter(b=>b.c>b.o).length;
   const reds=seq.filter(b=>b.c<b.o).length;
   const chase=(best.dir==="CALL" && greens>=3) || (best.dir==="PUT" && reds>=3);
-  if(best.a&&best.a.src==="fx" && (chase || (lastBar && !agree))){
+  if(!ST._mustEmit && best.a && (chase || (lastBar && !agree && best.conf<88))){
     ST._usedIds=ST._usedIds||[];
     if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id);
     area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false;
@@ -3246,6 +3268,8 @@ async function runSig(){
     try{ if(window.speechSynthesis){ speechSynthesis.cancel(); ST._speaking=false; speakNow(fala); } }catch(e){}
     ST.asset=best.a; ST._lastId=best.a.id; ST._speakNow=false;
     try{ openBrokerPair(best.a, best.dir); }catch(e){}
+    ST._mustEmit=0;
+    ST._pairSince=Date.now();
     ST._usedIds=(ST._usedIds||[]).filter(x=>x!==best.a.id).concat([best.a.id]);
     if(ST._usedIds.length>18) ST._usedIds=ST._usedIds.slice(-18);
     const lastB=usedBars.at(-1), prevB=usedBars.at(-2)||lastB;
@@ -3257,7 +3281,7 @@ async function runSig(){
     const nextOpen=(Math.floor(Date.now()/1000/tfSec)+1)*tfSec;
     const nd=new Date(nextOpen*1000);
     const nextCandle=String(nd.getHours()).padStart(2,"0")+":"+String(nd.getMinutes()).padStart(2,"0")+":"+String(nd.getSeconds()).padStart(2,"0");
-  area.innerHTML="<div class='sig "+(best.dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · "+(best.tf==="300"?"M5":"M1")+"</div><div style='font-size:26px;line-height:1.1;text-align:center;margin:4px 0'>"+pairIcon(best.a)+"</div><div class='muted' style='text-align:center'><b>"+best.a.name+"</b><br>"+best.sname+"</div><div class='bigdir "+(best.dir==="CALL"?"up":"down")+"'>"+(best.dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+fmt(touch,best.a.digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>"+expLab+"</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>"+nextCandle+"</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>--:--:--</b></div></div><p class='muted'>"+best.why+"</p></div>"
+  area.innerHTML="<div class='sig "+(best.dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · "+(best.tf==="300"?"M5":"M1")+"</div><div style='font-size:26px;line-height:1.1;text-align:center;margin:4px 0'>"+pairIcon(best.a)+"</div><div class='muted' style='text-align:center'><b>"+best.a.name+"</b><br>"+best.sname+"</div><div id='chartHint' style='text-align:center;color:#f5d76e;font-weight:700;font-size:12px;margin:4px 0'>Clique em "+pairName(best.a)+" na corretora</div><div class='bigdir "+(best.dir==="CALL"?"up":"down")+"'>"+(best.dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+fmt(touch,best.a.digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>"+expLab+"</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>"+nextCandle+"</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>--:--:--</b></div></div><p class='muted'>"+best.why+"</p></div>"
     +"<div class='card'><div class='muted'>MERCADO AGORA</div><div class='trends'><div class='tf'><span>ESTRUTURA</span><b class='"+(td.cls==="up"?"up":"down")+"'>"+td.lab+"</b></div><div class='tf'><span>VELA</span><b>"+vela+"</b></div><div class='tf'><span>RSI</span><b>"+rsiv+"</b></div></div><p class='muted'>Abertura "+fmt(lastB.o,best.a.digits)+" · Máx "+fmt(lastB.h,best.a.digits)+" · Mín "+fmt(lastB.l,best.a.digits)+" · Fecha "+fmt(lastB.c,best.a.digits)+"</p></div>"
 ;
   ST._holdHtml=area.innerHTML;
@@ -3297,8 +3321,9 @@ async function runSig(){
     if(Date.now()>=(ST._nextAt||0)) clearInterval(ST._tick);
   },250);
  }catch(e){ if(!ST._entryOpen) area.innerHTML="<p class='muted'>Lendo de novo. "+(e&&e.message?e.message:"")+"</p>"; }
- area.dataset.busy=""; ST._scanLock=0; ST._nextAt=0;
- if(!ST._entryOpen && ST.panelTab==="sinais" && !ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 1200);
+ area.dataset.busy=""; ST._scanLock=0;
+ if(!ST._entryOpen) ST._nextAt=0;
+ if(!ST._entryOpen && ST.panelTab==="sinais" && !ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 800);
 }
 
 function book(){
@@ -3675,10 +3700,15 @@ function openBrokerPair(a,dir){
   ST._vexLocked=true;
   const par=pairName(a);
   const tick=a.ticker||a.id||"";
-  const payload={ryck:"pair", name:par, ticker:tick, id:a.id, dir:dir||"", src:a.src||"fx"};
+  const payload={type:"ryck-pair", ryck:"pair", name:par, ticker:tick, id:a.id, dir:dir||"", src:a.src||"fx", asset:a.name||par};
+  const frame=document.getElementById("tvFrame");
+  try{ if(frame&&frame.contentWindow) frame.contentWindow.postMessage(payload,"*"); }catch(e){}
   try{ window.parent.postMessage(payload,"*"); }catch(e){}
   try{ window.postMessage(payload,"*"); }catch(e){}
   try{ navigator.clipboard.writeText(par); }catch(e){}
+  ST._chartAsk=par;
+  const hint=document.getElementById("chartHint");
+  if(hint) hint.textContent="Abra "+par+" no gráfico";
 }
 function deskSetTv(a){
   openBrokerPair(a, ST._deskSig && ST._deskSig[a&&a.id] && ST._deskSig[a.id].dir);
