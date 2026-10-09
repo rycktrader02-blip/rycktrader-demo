@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v166</title>
+<title>RyckTrader v167</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v166</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v167</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3001,7 +3001,7 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(!ST._pickId && (ST._usedIds||[]).length < 8 && (ST._usedIds||[]).indexOf(a.id)>=0) return;
-    const fast=["srx","pin","eng","sfp","qsd","pad","krev","mdoj","pa","ttop","star","hmr","hs","ihs","tw","dark","flag","tri","bos","ob","fvg","pull"];
+    const fast=["eng","pad","pin","star","hmr","cnt_sol","flag","tri","bos","pull","dark","tw","sfp","ttop","hs","ihs","mdoj","qsd","krev","ob","fvg","pa","srx"];
     const order=want==="auto"?fast.filter(s=>ops.includes(s)):ops.slice();
     for(const sid of order){
       if(sid==="mira"||sid==="ari") continue;
@@ -3018,22 +3018,39 @@ async function runSig(){
       if(!ev||!ev.dir) continue;
       const runG=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c>bars[i].o;i--) n++; return n;})();
       const runR=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c<bars[i].o;i--) n++; return n;})();
-      if(ev.dir==="CALL" && runG>=2) continue;
-      if(ev.dir==="PUT" && runR>=2) continue;
-      const boxR=bars.slice(-16,-1);
+      const revSet={srx:1,pa:1,sfp:1,pin:1,hmr:1,star:1,ttop:1,mdoj:1,qsd:1,hs:1,ihs:1,krev:1,tw:1};
+      const contSet={eng:1,pull:1,bos:1,flag:1,tri:1,cnt_sol:1,ob:1,fvg:1,dark:1,pad:1,liq:1,retest:1,r123:1};
+      const boxR=bars.slice(-12,-1);
       const bhR=Math.max.apply(null,boxR.map(b=>b.h)), blR=Math.min.apply(null,boxR.map(b=>b.l));
       const posR=(last.c-blR)/Math.max(bhR-blR,1e-12);
-      if(ev.dir==="PUT" && posR<0.62) continue;
-      if(ev.dir==="CALL" && posR>0.38) continue;
+      const seq6=bars.slice(-6);
+      let upN=0,dnN=0;
+      for(let i=1;i<seq6.length;i++){ if(seq6[i].c>seq6[i-1].c) upN++; else if(seq6[i].c<seq6[i-1].c) dnN++; }
+      const trendDn=dnN>=upN+1, trendUp=upN>=dnN+1;
+      if(ev.dir==="CALL" && last.c<last.o) continue;
+      if(ev.dir==="PUT" && last.c>last.o) continue;
+      if(ev.dir==="CALL" && runG>=3) continue;
+      if(ev.dir==="PUT" && runR>=3) continue;
+      if(revSet[sid]){
+        if(ev.dir==="PUT" && posR<0.55) continue;
+        if(ev.dir==="CALL" && posR>0.45) continue;
+        if(ev.dir==="CALL" && trendDn && runR>=2) continue;
+        if(ev.dir==="PUT" && trendUp && runG>=2) continue;
+      } else {
+        if(ev.dir==="CALL" && trendDn) continue;
+        if(ev.dir==="PUT" && trendUp) continue;
+        if(ev.dir==="CALL" && !trendUp && posR>0.50) continue;
+        if(ev.dir==="PUT" && !trendDn && posR<0.50) continue;
+      }
       ev.touch=last.c;
       const pat={pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,tw:1,dark:1,prc:1,pa:1,ttop:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,retest:1,liq:1};
-      if(!pat[sid]){
+      if(!pat[sid] && revSet[sid]){
         const box=bars.slice(-16,-1);
         const bh=Math.max.apply(null,box.map(b=>b.h)), bl=Math.min.apply(null,box.map(b=>b.l));
         const bsp=Math.max(bh-bl,1e-12);
         const pos=(last.c-bl)/bsp;
-        if(ev.dir==="CALL" && pos>0.28) continue;
-        if(ev.dir==="PUT" && pos<0.72) continue;
+        if(ev.dir==="CALL" && pos>0.45) continue;
+        if(ev.dir==="PUT" && pos<0.55) continue;
       }
       
       const meta=STRATS.find(s=>s.id===sid);
@@ -3048,9 +3065,10 @@ async function runSig(){
         _rank:+(ev.conf||0),
         bars:bars
       };
-      const touchBonus=ev.touch?12:0;
-      const lineBonus=(sid==="srx"||sid==="sfp"||sid==="pin")?8:0;
-      pack._rank=(ev.conf||70)+touchBonus+lineBonus;
+      const touchBonus=ev.touch?4:0;
+      const trendBonus=(contSet[sid]&&((ev.dir==="PUT"&&trendDn)||(ev.dir==="CALL"&&trendUp)))?14:0;
+      const revBonus=(revSet[sid]&&((ev.dir==="PUT"&&posR>=0.68)||(ev.dir==="CALL"&&posR<=0.32)))?6:0;
+      pack._rank=(ev.conf||70)+touchBonus+trendBonus+revBonus+(sid==="srx"?-6:0);
       hits.push(pack);
       if(!best || pack._rank>(best._rank||0)){ best=pack; usedBars=bars; }
     }
@@ -3064,10 +3082,28 @@ async function runSig(){
         const dnW=(Math.min(last.o,last.c)-last.l)/Math.max(last.h-last.l,1e-12);
         const reds=bars.slice(-4,-1).filter(b=>b.c<b.o).length;
         const greens=bars.slice(-4,-1).filter(b=>b.c>b.o).length;
-        if(last.h>=hi-span*0.08 && last.c<last.o && last.c>lo+span*0.35 && upW>=0.4 && reds<2){
+        const seq=bars.slice(-6);
+        let upN=0,dnN=0;
+        for(let i=1;i<seq.length;i++){ if(seq[i].c>seq[i-1].c) upN++; else if(seq[i].c<seq[i-1].c) dnN++; }
+        const trendDn=dnN>=upN+1, trendUp=upN>=dnN+1;
+        const soldiers=bars.slice(-3).every(b=>b.c>b.o) && bars.at(-1).c>bars.at(-3).o;
+        const crows=bars.slice(-3).every(b=>b.c<b.o) && bars.at(-1).c<bars.at(-3).o;
+        if(crows && reds<4){
+          best={a:a,sid:"cnt_sol",tf:tf,dir:"PUT",conf:88,why:"Três corvos. Venda a favor da queda.",sname:"3 corvos",touch:last.c};
+          usedBars=bars;
+        } else if(soldiers && greens<4){
+          best={a:a,sid:"cnt_sol",tf:tf,dir:"CALL",conf:88,why:"Três soldados. Compra a favor da alta.",sname:"3 soldados",touch:last.c};
+          usedBars=bars;
+        } else if(trendDn && last.c<last.o && reds<3 && ((last.c-lo)/Math.max(hi-lo,1e-12))>0.35){
+          best={a:a,sid:"eng",tf:tf,dir:"PUT",conf:86,why:"Gráfico caindo. Venda no fluxo.",sname:"Fluxo de baixa",touch:last.c};
+          usedBars=bars;
+        } else if(trendUp && last.c>last.o && greens<3 && ((last.c-lo)/Math.max(hi-lo,1e-12))<0.65){
+          best={a:a,sid:"eng",tf:tf,dir:"CALL",conf:86,why:"Gráfico subindo. Compra no fluxo.",sname:"Fluxo de alta",touch:last.c};
+          usedBars=bars;
+        } else if(last.h>=hi-span*0.08 && last.c<last.o && last.c>lo+span*0.35 && upW>=0.4 && reds<2 && !trendUp){
           best={a:a,sid:"srx",tf:tf,dir:"PUT",conf:90,why:"Pavio na resistência. Venda na linha.",sname:"Resistência",touch:hi};
           usedBars=bars;
-        } else if(last.l<=lo+span*0.08 && last.c>last.o && last.c<hi-span*0.35 && dnW>=0.4 && greens<2){
+        } else if(last.l<=lo+span*0.08 && last.c>last.o && last.c<hi-span*0.35 && dnW>=0.4 && greens<2 && !trendDn){
           best={a:a,sid:"srx",tf:tf,dir:"CALL",conf:90,why:"Pavio no suporte. Compra na linha.",sname:"Suporte",touch:lo};
           usedBars=bars;
         }
@@ -3190,8 +3226,14 @@ async function runSig(){
       const upW=(last.h-Math.max(last.o,last.c))/rng;
       const dnW=(Math.min(last.o,last.c)-last.l)/rng;
       let dir=null, sc=0, why="", sname="";
-      if(pos>=0.55 && last.c<=last.o){ dir="PUT"; sc=pos+upW; why="Topo do momento. Venda na rejeição."; sname="Resistência"; }
-      else if(pos<=0.45 && last.c>=last.o){ dir="CALL"; sc=(1-pos)+dnW; why="Fundo do momento. Compra na rejeição."; sname="Suporte"; }
+      const seq=bars.slice(-6); let upN=0,dnN=0;
+      for(let i=1;i<seq.length;i++){ if(seq[i].c>seq[i-1].c) upN++; else if(seq[i].c<seq[i-1].c) dnN++; }
+      const trendDn=dnN>=upN+1, trendUp=upN>=dnN+1;
+      const reds=bars.slice(-3).filter(b=>b.c<b.o).length, greens=bars.slice(-3).filter(b=>b.c>b.o).length;
+      if(trendDn && last.c<last.o && reds<3){ dir="PUT"; sc=0.8+dnN/6; why="Queda clara. Venda a favor."; sname=pos>=0.55?"Resistência":"Fluxo de baixa"; }
+      else if(trendUp && last.c>last.o && greens<3){ dir="CALL"; sc=0.8+upN/6; why="Alta clara. Compra a favor."; sname=pos<=0.45?"Suporte":"Fluxo de alta"; }
+      else if(pos>=0.55 && last.c<=last.o && !trendUp){ dir="PUT"; sc=pos+upW; why="Topo do momento. Venda na rejeição."; sname="Resistência"; }
+      else if(pos<=0.45 && last.c>=last.o && !trendDn){ dir="CALL"; sc=(1-pos)+dnW; why="Fundo do momento. Compra na rejeição."; sname="Suporte"; }
       if(!dir || sc<=fbSc) continue;
       fbSc=sc; fbBars=bars;
       fb={a:a,sid:"srx",tf:String(g),dir:dir,conf:80,why:why,sname:sname,touch:last.c,_rank:80+sc*10,bars:bars};
