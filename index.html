@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v156</title>
+<title>RyckTrader v157</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v156</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v157</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2914,9 +2914,8 @@ async function runSig(){
   const fresh=uni.filter(a=>used.indexOf(a.id)<0);
   if(fresh.length) uni=fresh; else ST._usedIds=[];
   if(uni.length>1){
-    ST._pairRot=(ST._pairRot||0)%uni.length;
-    uni=uni.slice(ST._pairRot).concat(uni.slice(0, ST._pairRot));
-    ST._pairRot=(ST._pairRot+7)%uni.length;
+    for(let i=uni.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const tmp=uni[i]; uni[i]=uni[j]; uni[j]=tmp; }
+    uni=uni.slice(0, 6);
   }
   const BEST_OPS=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri"];
   ST._rot=ST._rot||0;
@@ -2966,8 +2965,8 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(!ST._pickId && used.indexOf(a.id)>=0) return;
-    const fast=["pad","pin","eng","star","hmr","sfp","qsd","r123","krev","mdoj","hs","ihs","tw","dark","prc","pa","ttop","choc","eqsw","out","pull","bos","ob","fvg","flag","tri","cnt_sol","retest","liq","srx"];
-    const order=fast.filter(s=>ops.includes(s)).concat(ops.filter(s=>fast.indexOf(s)<0));
+    const fast=["srx","pin","eng","sfp","qsd","pad","krev","mdoj","pa","ttop"];
+    const order=fast.filter(s=>ops.includes(s)).slice(0, 4);
     for(const sid of order){
       if(sid==="mira"||sid==="ari") continue;
       
@@ -3007,7 +3006,7 @@ async function runSig(){
         _rank:+(ev.conf||0),
         bars:bars
       };
-      hits.push(pack);
+      hits.push(pack); best=pack; usedBars=bars; return;
       if(!best || pack._rank>(best._rank||0)){
         best=pack; usedBars=bars;
       }
