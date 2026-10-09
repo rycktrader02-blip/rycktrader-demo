@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v164</title>
+<title>RyckTrader v165</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v164</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v165</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3152,12 +3152,36 @@ async function runSig(){
     }
   }
   if(!best){
+    let soft=null, softBars=null, softScore=-1;
+    for(const a of uni){
+      const bars=(ST._scanBars&&ST._scanBars[a.id])||(ST._barCache&&ST._barCache[a.id+"|"+g]&&ST._barCache[a.id+"|"+g].raw);
+      if(!bars||bars.length<12) continue;
+      if(a.id===ST._lastShown) continue;
+      const last=bars[bars.length-1];
+      if(!(last&&last.c>0)) continue;
+      const box=bars.slice(-12,-1);
+      const bh=Math.max.apply(null,box.map(b=>b.h)), bl=Math.min.apply(null,box.map(b=>b.l));
+      const pos=(last.c-bl)/Math.max(bh-bl,1e-12);
+      const runG=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c>bars[i].o;i--) n++; return n;})();
+      const runR=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c<bars[i].o;i--) n++; return n;})();
+      let dir=null, sc=0;
+      if(pos>=0.72 && runG<2){ dir="PUT"; sc=pos; }
+      else if(pos<=0.28 && runR<2){ dir="CALL"; sc=1-pos; }
+      if(!dir) continue;
+      if(sc>softScore){
+        softScore=sc;
+        softBars=bars;
+        soft={a:a,sid:"srx",tf:String(g),dir:dir,conf:84,why:dir==="PUT"?"Preço no topo. Venda na resistência.":"Preço no fundo. Compra no suporte.",sname:dir==="PUT"?"Resistência":"Suporte",touch:last.c,_rank:84+sc*10,bars:bars};
+      }
+    }
+    if(soft){ best=soft; usedBars=softBars; hits.push(soft); }
+  }
+  if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     ST._pickId=""; ST._pinAsset=""; ST._entryOpen=false;
-    if(ST._holdHtml && Date.now()<(ST._nextAt||0)) area.innerHTML=ST._holdHtml;
     area.dataset.busy=""; ST._scanLock=0;
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 700);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 900);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
