@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v155</title>
+<title>RyckTrader v156</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v155</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v156</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3172,7 +3172,7 @@ async function runSig(){
     area.dataset.busy=""; ST._scanLock=0;
     return;
   }
-  const holdSec=35; ST._nextAt=Date.now()+holdSec*1000;
+  const holdSec=60; ST._nextAt=Date.now()+holdSec*1000; ST._pinAsset=best.a.id;
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._scanGen=(ST._scanGen||0)+1;
@@ -3225,7 +3225,7 @@ async function runSig(){
   },250);
   ST.signal={closeAt:Math.floor(ST._holdUntil/1000),dir:best.dir,asset:best.a.id,name:pairName(best.a)};
   if(ST._arm) clearTimeout(ST._arm);
-  ST._arm=setTimeout(()=>{ ST._arm=null; ST._entryOpen=false; ST._scanLock=0; ST._pinAsset=""; ST._nextAt=0; ST._holdHtml=""; try{ runSig(); }catch(e){} }, Math.max(1000,(ST._holdUntil||Date.now())-Date.now()+500));
+  ST._arm=setTimeout(()=>{ ST._arm=null; ST._entryOpen=false; ST._scanLock=0; ST._nextAt=0; try{ runSig(); }catch(e){} }, Math.max(1000,(ST._holdUntil||Date.now())-Date.now()+200));
   if(ST._tick) clearInterval(ST._tick);
   const clock=d=>{ const x=new Date(d); return String(x.getHours()).padStart(2,"0")+":"+String(x.getMinutes()).padStart(2,"0")+":"+String(x.getSeconds()).padStart(2,"0"); };
   ST._tick=setInterval(()=>{
