@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v162</title>
+<title>RyckTrader v163</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v162</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v163</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2315,14 +2315,26 @@ function candlePadrao(bars){
   return{dir:null,conf:0,why:"Sem varredura."};
  }
  if(id==="ttop"){
-  const w=bars.slice(-18,-1); if(w.length<12) return{dir:null,conf:0,why:"Histórico curto."};
-  const hs=w.map(x=>x.h).sort((a,b)=>b-a).slice(0,3), ls=w.map(x=>x.l).sort((a,b)=>a-b).slice(0,3);
-  const near=(arr)=>Math.max(...arr)-Math.min(...arr)<last.c*0.0018;
-  const midL=w.map(x=>x.h).sort((a,b)=>a-b)[Math.floor(w.length/2)];
-  const midH=w.map(x=>x.l).sort((a,b)=>b-a)[Math.floor(w.length/2)];
-  if(near(ls) && last.c>midL && last.c>last.o) return{dir:"CALL",conf:84,why:"Triplo fundo rompido.",touch:midL};
-  if(near(hs) && last.c<midH && last.c<last.o) return{dir:"PUT",conf:84,why:"Triplo topo perdido.",touch:midH};
-  return{dir:null,conf:0,why:"Sem triplo."};
+  const w=bars.slice(-24,-1); if(w.length<16) return{dir:null,conf:0,why:"Histórico curto."};
+  const swingsH=[], swingsL=[];
+  for(let i=2;i<w.length-2;i++){
+    if(w[i].h>=w[i-1].h && w[i].h>=w[i-2].h && w[i].h>=w[i+1].h && w[i].h>=w[i+2].h) swingsH.push({i:i,p:w[i].h});
+    if(w[i].l<=w[i-1].l && w[i].l<=w[i-2].l && w[i].l<=w[i+1].l && w[i].l<=w[i+2].l) swingsL.push({i:i,p:w[i].l});
+  }
+  const clustered=(arr)=>{
+    if(arr.length<3) return null;
+    const last3=arr.slice(-3);
+    if(last3[2].i-last3[0].i<6) return null;
+    const mx=Math.max.apply(null,last3.map(x=>x.p)), mn=Math.min.apply(null,last3.map(x=>x.p));
+    if((mx-mn)/Math.max(last.c,1e-9)>0.0015) return null;
+    return (mx+mn)/2;
+  };
+  const top=clustered(swingsH), bot=clustered(swingsL);
+  const nearTop=top && Math.abs(last.c-top)/top<0.0012 && last.c<=top;
+  const nearBot=bot && Math.abs(last.c-bot)/bot<0.0012 && last.c>=bot;
+  if(nearBot && last.c>last.o) return{dir:"CALL",conf:86,why:"Triplo fundo no preço.",sname:"Triplo fundo",touch:last.c};
+  if(nearTop && last.c<last.o) return{dir:"PUT",conf:86,why:"Triplo topo no preço.",sname:"Triplo topo",touch:last.c};
+  return{dir:null,conf:0,why:"Sem triplo no preço."};
  }
  if(id==="isl"){
   const g=(a,b)=>Math.abs(a.o-b.c)>Math.max(a.c*0.0008,1e-9);
@@ -3013,6 +3025,12 @@ async function runSig(){
       const runR=(function(){let n=0; for(let i=bars.length-1;i>=0&&bars[i].c<bars[i].o;i--) n++; return n;})();
       if(ev.dir==="CALL" && runG>=2) continue;
       if(ev.dir==="PUT" && runR>=2) continue;
+      const boxR=bars.slice(-16,-1);
+      const bhR=Math.max.apply(null,boxR.map(b=>b.h)), blR=Math.min.apply(null,boxR.map(b=>b.l));
+      const posR=(last.c-blR)/Math.max(bhR-blR,1e-12);
+      if(ev.dir==="PUT" && posR<0.62) continue;
+      if(ev.dir==="CALL" && posR>0.38) continue;
+      ev.touch=last.c;
       const pat={pad:1,pin:1,eng:1,star:1,hmr:1,sfp:1,qsd:1,r123:1,krev:1,mdoj:1,hs:1,ihs:1,tw:1,dark:1,prc:1,pa:1,ttop:1,pull:1,bos:1,ob:1,fvg:1,flag:1,tri:1,cnt_sol:1,retest:1,liq:1};
       if(!pat[sid]){
         const box=bars.slice(-16,-1);
@@ -3154,7 +3172,7 @@ async function runSig(){
     area.innerHTML="<div class='muted'>FILTRO DE VOLATILIDADE</div><p class='muted'>"+vs.why+"</p><p class='muted'>"+vs.lab+" · ATR("+vs.n+") "+vs.pct.toFixed(3)+"% · x"+vs.ratio.toFixed(2)+" da média · modo "+vs.mode+" · "+(best.dir||"—")+" ignorado</p><p class='muted'>Próxima checagem · "+String(Math.floor(falta/60)).padStart(2,"0")+":"+String(falta%60).padStart(2,"0")+"</p>";
     area.dataset.busy=""; ST._scanLock=0; return;
   }
-  const touch=best.touch||usedBars.at(-1).c;
+  const touch=usedBars.at(-1).c;
   const tfLab=ST.tf==="60"?"M1":ST.tf==="120"?"M2":"M5";
   const rk=sessionRisk();
   ST._firedSid=ST._firedSid||{};
