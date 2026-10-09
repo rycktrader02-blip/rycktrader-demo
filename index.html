@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v161</title>
+<title>RyckTrader v162</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v161</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v162</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2878,8 +2878,28 @@ async function warmFeed(){
     if(n<ids.length) setTimeout(step,400);
   })();
 }
+function armRot(){
+  if(ST._rotWatch) return;
+  ST._rotWatch=setInterval(()=>{
+    if(ST.panelTab && ST.panelTab!=="sinais") return;
+    if(!ST._pairSince || Date.now()-ST._pairSince<60000) return;
+    const mkt=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
+    const list=ASSETS.filter(a=>a.src===mkt && a.id!==ST._lastShown);
+    if(!list.length) return;
+    ST._rotIx=(ST._rotIx||0)%list.length;
+    const nxt=list[ST._rotIx]; ST._rotIx++;
+    ST._forceId=nxt.id;
+    ST._lastShown=nxt.id;
+    ST._pairSince=Date.now();
+    ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset=""; ST._scanLock=0; ST._holdHtml="";
+    if(ST._arm){ clearTimeout(ST._arm); ST._arm=null; }
+    if(ST._freezeT){ clearInterval(ST._freezeT); ST._freezeT=null; }
+    try{ runSig(); }catch(e){}
+  },1000);
+}
 async function runSig(){
   try{ warmFeed(); }catch(e){}
+  try{ armRot(); }catch(e){}
 
  const area=$("sigArea"); if(!area) return;
  if(ST._scanLock && Date.now()-(ST._scanAt||0)>2500) ST._scanLock=0;
@@ -2913,12 +2933,16 @@ async function runSig(){
   const fxAll=uniq(ASSETS.filter(a=>a.src==="fx"));
   const cryAll=uniq(ASSETS.filter(a=>a.src==="crypto"));
   let uni=mkt==="crypto"?cryAll:fxAll;
-  if(ST._pinAsset && ST.panelTab==="sinais"){ ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(ST._pinAsset)<0) ST._usedIds.push(ST._pinAsset); ST._pinAsset=""; }
-  const used=ST._usedIds||[];
-  const last=ST._lastShown||"";
-  let fresh=uni.filter(a=>used.indexOf(a.id)<0 && a.id!==last);
-  if(!fresh.length){ ST._usedIds = last ? [last] : []; fresh=uni.filter(a=>a.id!==last); }
-  if(fresh.length) uni=fresh;
+  ST._pinAsset="";
+  if(ST._forceId){
+    const forced=uni.find(a=>a.id===ST._forceId);
+    ST._forceId="";
+    if(forced) uni=[forced];
+  } else {
+    const last=ST._lastShown||"";
+    const fresh=uni.filter(a=>a.id!==last);
+    if(fresh.length) uni=fresh;
+  }
   if(uni.length>1){
     for(let i=uni.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const tmp=uni[i]; uni[i]=uni[j]; uni[j]=tmp; }
   }
@@ -3197,7 +3221,7 @@ async function runSig(){
   ST._holdHtml=area.innerHTML;
   ST._pickSay=best.dir+" · "+pairName(best.a)+" · "+(best.sname||best.why||"");
   if(ST.panelTab==="sinais"){ const pe=document.getElementById("pickEntry"); if(pe) pe.innerHTML=""; }
-  ST._pinAsset=best.a.id; ST._usedIds=ST._usedIds||[]; if(ST._usedIds.indexOf(best.a.id)<0) ST._usedIds.push(best.a.id); if(ST._usedIds.length>24) ST._usedIds=ST._usedIds.slice(-24);
+  ST._pinAsset=""; ST._lastShown=best.a.id; ST._pairSince=ST._pairSince||Date.now();
   ST._entryOpen=true; ST._holdUntil=Date.now()+60000;
   ST._freezeHtml=area.innerHTML;
   ST._freezeSay=(document.getElementById("roboSay")||{}).textContent||"";
@@ -3205,7 +3229,7 @@ async function runSig(){
   ST._pinAsset=best.a.id;
   if(ST._freezeT) clearInterval(ST._freezeT);
   ST._freezeT=setInterval(()=>{
-    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ clearInterval(ST._freezeT); ST._entryOpen=false; return; }
+    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ clearInterval(ST._freezeT); ST._freezeT=null; ST._entryOpen=false; ST._nextAt=0; ST._holdUntil=0; ST._scanLock=0; ST._holdHtml=""; try{ runSig(); }catch(e){} return; }
     const box=document.getElementById("sigArea");
     if(box && ST._freezeHtml && !box.querySelector("#velaClock")) box.innerHTML=ST._freezeHtml;
     const say=document.getElementById("roboSay");
