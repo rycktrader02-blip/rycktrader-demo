@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v157</title>
+<title>RyckTrader v158</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v157</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v158</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2882,7 +2882,7 @@ async function runSig(){
   try{ warmFeed(); }catch(e){}
 
  const area=$("sigArea"); if(!area) return;
- if(ST._scanLock && Date.now()-(ST._scanAt||0)>8000) ST._scanLock=0;
+ if(ST._scanLock && Date.now()-(ST._scanAt||0)>2500) ST._scanLock=0;
  if(!ST._pickId && Date.now()<(ST._nextAt||0)){
    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; ST._entryOpen=false; ST._scanLock=0; ST._pinAsset=""; try{ runSig(); }catch(e){} }, Math.max(800,(ST._nextAt||Date.now())-Date.now()));
@@ -2915,7 +2915,7 @@ async function runSig(){
   if(fresh.length) uni=fresh; else ST._usedIds=[];
   if(uni.length>1){
     for(let i=uni.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const tmp=uni[i]; uni[i]=uni[j]; uni[j]=tmp; }
-    uni=uni.slice(0, 6);
+    uni=uni.slice(0, 16);
   }
   const BEST_OPS=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri"];
   ST._rot=ST._rot||0;
@@ -3060,7 +3060,7 @@ async function runSig(){
     await new Promise(resolve=>{
       let open=uni.length, done=false;
       const finish=()=>{ if(!done){ done=true; resolve(); } };
-      const timer=setTimeout(finish, 650);
+      const timer=setTimeout(finish, 900);
       uni.forEach(a=>{
         withT(candles(a.id,g), 550).then(raw=>{
           if(!done && raw && raw.length){ take(a, raw); if(best){ clearTimeout(timer); finish(); } }
