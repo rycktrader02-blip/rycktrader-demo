@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v159</title>
+<title>RyckTrader v160</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v159</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v160</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2900,7 +2900,7 @@ async function runSig(){
   const picked=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
   const mkt=picked;
   ST.mkt=mkt; ST.filt=mkt; ST.deskMkt=mkt;
-  if(!ST._holdHtml) area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+"</div><p class='muted'>A entrada sai no toque da linha, sem esperar o mercado inteiro.</p>";
+  if(!ST._holdHtml) area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+"</div><p class='muted'>Lendo todos os pares. Sai a melhor do momento.</p>";
   const seenT=new Set();
   const uniq=list=>list.filter(a=>{
     const k=String(a.ticker||a.id||"").replace("/","");
@@ -2915,7 +2915,6 @@ async function runSig(){
   if(fresh.length) uni=fresh; else ST._usedIds=[];
   if(uni.length>1){
     for(let i=uni.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const tmp=uni[i]; uni[i]=uni[j]; uni[j]=tmp; }
-    uni=uni.slice(0, 16);
   }
   const BEST_OPS=["srx","pad","pin","eng","star","hmr","sfp","qsd","r123","choc","eqsw","retest","out","krev","ttop","mdoj","hs","ihs","tw","dark","prc","pa","pull","bos","ob","fvg","liq","cnt_sol","flag","tri"];
   ST._rot=ST._rot||0;
@@ -2965,8 +2964,8 @@ async function runSig(){
     if(!bars||bars.length<5) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(!ST._pickId && used.indexOf(a.id)>=0) return;
-    const fast=["srx","pin","eng","sfp","qsd","pad","krev","mdoj","pa","ttop"];
-    const order=fast.filter(s=>ops.includes(s)).slice(0, 4);
+    const fast=["srx","pin","eng","sfp","qsd","pad","krev","mdoj","pa","ttop","star","hmr","hs","ihs","tw","dark","flag","tri","bos","ob","fvg","pull"];
+    const order=want==="auto"?fast.filter(s=>ops.includes(s)):ops.slice();
     for(const sid of order){
       if(sid==="mira"||sid==="ari") continue;
       
@@ -3006,10 +3005,11 @@ async function runSig(){
         _rank:+(ev.conf||0),
         bars:bars
       };
-      hits.push(pack); best=pack; usedBars=bars; return;
-      if(!best || pack._rank>(best._rank||0)){
-        best=pack; usedBars=bars;
-      }
+      const touchBonus=ev.touch?12:0;
+      const lineBonus=(sid==="srx"||sid==="sfp"||sid==="pin")?8:0;
+      pack._rank=(ev.conf||70)+touchBonus+lineBonus;
+      hits.push(pack);
+      if(!best || pack._rank>(best._rank||0)){ best=pack; usedBars=bars; }
     }
     if(!best){
       const last=bars.at(-1);
@@ -3053,17 +3053,16 @@ async function runSig(){
   for(const a of uni){
     const hit=ST._barCache[a.id+"|"+g];
     if(hit&&hit.raw&&hit.raw.length) take(a, hit.raw);
-    if(best) break;
   }
-  if(!best){
-    const pg=$("scanProg"); if(pg) pg.textContent="Buscando a linha";
+  {
+    const pg=$("scanProg"); if(pg) pg.textContent="Lendo todos os pares";
     await new Promise(resolve=>{
       let open=uni.length, done=false;
       const finish=()=>{ if(!done){ done=true; resolve(); } };
-      const timer=setTimeout(finish, 900);
+      const timer=setTimeout(finish, 2200);
       uni.forEach(a=>{
-        withT(candles(a.id,g), 550).then(raw=>{
-          if(!done && raw && raw.length){ take(a, raw); if(best){ clearTimeout(timer); finish(); } }
+        withT(candles(a.id,g), 1600).then(raw=>{
+          if(!done && raw && raw.length) take(a, raw);
         }).finally(()=>{ open--; if(open<=0){ clearTimeout(timer); finish(); } });
       });
     });
@@ -3075,16 +3074,7 @@ async function runSig(){
     best.exp=pickExpiry(usedBars);
     best.tf=String(g);
     const confirmG=ST._pairMode==="m5m1"?60:300;
-    try{
-      const cb=await withT(candles(best.a.id, confirmG), 400);
-      const last=cb && cb.at(-1);
-      const prev=cb && cb.at(-2);
-      if(last && prev){
-        const chase=best.dir==="CALL" ? (last.c>last.o && prev.c>prev.o) : (last.c<last.o && prev.c<prev.o);
-        const against=best.dir==="CALL" ? last.c<prev.l : last.c>prev.h;
-        if(chase || against) best=null;
-      }
-    }catch(e){}
+    /* v160: a melhor já passou no filtro da vela */
   }
   const key=(want==="auto"?(best?best.sid:STRATS[0].id):want)+"_"+ST.tf;
   const bt=ST.back[key]||ST.back[ST.strat+"_"+ST.tf]||{};
