@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v171</title>
+<title>RyckTrader v172</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v171</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v172</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1067,7 +1067,7 @@ function derivHistory(code, gran){
   if(![60,120,180,300,600,900,1800,3600,14400,86400].includes(gran)) gran=300;
   return derivSock().then(ws=>new Promise((resolve,reject)=>{
     const id=++_did;
-    const to=setTimeout(()=>{ delete _dcb[id]; reject(new Error("timeout FX")); },800);
+    const to=setTimeout(()=>{ delete _dcb[id]; reject(new Error("timeout FX")); },2800);
     _dcb[id]=j=>{
       clearTimeout(to);
       if(j.error){ reject(new Error(j.error.message||"FX")); return; }
@@ -3156,14 +3156,19 @@ async function runSig(){
   {
     const pg=$("scanProg"); if(pg) pg.textContent="Lendo todos os pares";
     await new Promise(resolve=>{
-      let open=uni.length, done=false;
+      let open=uni.length, done=false, got=0;
       const finish=()=>{ if(!done){ done=true; resolve(); } };
-      const timer=setTimeout(finish, 2200);
-      uni.forEach(a=>{
-        withT(candles(a.id,g), 1600).then(raw=>{
-          if(!done && raw && raw.length) take(a, raw);
-        }).finally(()=>{ open--; if(open<=0){ clearTimeout(timer); finish(); } });
-      });
+      const timer=setTimeout(finish, mkt==="fx"?11000:4500);
+      const queue=uni.slice();
+      const runNext=()=>{
+        if(done) return;
+        const a=queue.shift();
+        if(!a) return;
+        withT(candles(a.id,g), mkt==="fx"?3200:1600).then(raw=>{
+          if(!done && raw && raw.length){ take(a, raw); got++; const pg=$("scanProg"); if(pg) pg.textContent="Lendo "+got+"/"+uni.length; }
+        }).finally(()=>{ open--; if(open<=0){ clearTimeout(timer); finish(); } else runNext(); });
+      };
+      for(let i=0;i<Math.min(4,queue.length);i++) runNext();
     });
   }
   if(scanGen!==(ST._scanGen||0)){ area.dataset.busy=""; ST._scanLock=0; return; }
