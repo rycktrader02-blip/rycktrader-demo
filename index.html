@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v172</title>
+<title>RyckTrader v173</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v172</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v173</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2459,7 +2459,7 @@ async function loadRank(){
 function paintSide(){
   const box=$("sideList"); if(!box) return;
   const cur=ST.asset&&ST.asset.id;
-  const rows=(ST.rank||[]).filter(r=>r.a && r.a.id!==cur).slice(0,24);
+  const rows=(ST.rank||[]).filter(r=>r.a && r.a.id!==cur);
   if(!rows.length){
     box.innerHTML="<p class='muted'>Carregando os pares…</p><button class='btn gold' onclick='go(\"sinais\")'>Ver sinais</button>";
     return;
@@ -2932,7 +2932,6 @@ async function runSig(){
   const picked=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
   const mkt=picked;
   ST.mkt=mkt; ST.filt=mkt; ST.deskMkt=mkt;
-  if(!ST._holdHtml && !ST._mustEmit) area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+"</div><p class='muted'>Lendo o mercado. A próxima sai em segundos.</p>";
   const seenT=new Set();
   const uniq=list=>list.filter(a=>{
     const k=String(a.ticker||a.id||"").replace("/","");
@@ -2941,6 +2940,7 @@ async function runSig(){
   const fxAll=uniq(ASSETS.filter(a=>a.src==="fx"));
   const cryAll=uniq(ASSETS.filter(a=>a.src==="crypto"));
   let uni=mkt==="crypto"?cryAll:fxAll;
+  if(!ST._holdHtml && !ST._mustEmit) area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+" · "+uni.length+" PARES</div><p class='muted'>Analisando a lista inteira. A entrada sai do par com o padrão agora.</p>";
   ST._pinAsset="";
   if(ST._forceId){
     const forced=uni.find(a=>a.id===ST._forceId);
@@ -3007,7 +3007,7 @@ async function runSig(){
     if(nm0==="EUR/USD" && (px0<0.9 || px0>1.3)) return;
     if(nm0==="GBP/USD" && (px0<1.05 || px0>1.55)) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
-    if(!ST._pickId && (ST._usedIds||[]).length < 8 && (ST._usedIds||[]).indexOf(a.id)>=0) return;
+    if(!ST._pickId && (ST._usedIds||[]).indexOf(a.id)>=0){ ST._seenSkip=(ST._seenSkip||0)+1; }
     const fast=["eng","pad","pin","star","hmr","cnt_sol","flag","tri","bos","pull","dark","tw","sfp","ttop","hs","ihs","mdoj","qsd","krev","ob","fvg","pa","srx"];
     const order=want==="auto"?fast.filter(s=>ops.includes(s)):ops.slice();
     for(const sid of order){
