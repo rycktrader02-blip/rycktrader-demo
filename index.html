@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v173</title>
+<title>RyckTrader v174</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v173</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v174</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -796,8 +796,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
       <button type="button" data-tf="300" onclick="setDeskTf('300')">5 MINUTOS</button>
     </div>
     <div class="ai-tf" id="aiMkt">
-      <button type="button" data-m="all" class="on" onclick="setDeskMkt('all')">TODOS</button>
-      <button type="button" data-m="fx" onclick="setDeskMkt('fx')">FOREX</button>
+      <button type="button" data-m="fx" class="on" onclick="setDeskMkt('fx')">FOREX</button>
       <button type="button" data-m="crypto" onclick="setDeskMkt('crypto')">CRIPTO</button>
     </div>
     <input class="ai-search" id="aiQ" placeholder="Buscar ativo ou ticker" oninput="ST.deskQ=this.value;ST._viewA=null;deskRender()">
@@ -961,7 +960,7 @@ const STRATS=[
 
 ];
 const INDIC_IDS={bb:1,macd:1,ma:1,rsi:1,stoch:1,ichi:1,cci:1,adx:1,sar:1,don:1,tdi:1,dbl:1,hma:1,rib:1};
-const ST={asset:null,cache:{},rank:[],tf:"60",strat:"auto",plan:null,back:{},_scan:null,filt:"fx",volOn:true,atrN:14,atrMode:"mid",chartTf:"300",m1:[],m5:[],liveTf:"60"};
+const ST={asset:null,cache:{},rank:[],tf:"60",strat:"auto",plan:null,back:{},_scan:null,filt:"fx",deskMkt:"fx",volOn:true,atrN:14,atrMode:"mid",chartTf:"300",m1:[],m5:[],liveTf:"60"};
 const $=id=>document.getElementById(id);
 function onSinais(){ return ST.panelTab==="sinais"; }
 function stopVoice(){
@@ -3759,8 +3758,9 @@ function brkPage(){
 function deskPairs(){
   const fx=ASSETS.filter(a=>a.src==="fx");
   const cr=ASSETS.filter(a=>a.src==="crypto");
-  const mkt=ST.deskMkt||ST.mkt||"all";
-  let rows=mkt==="fx"?fx:mkt==="crypto"?cr:fx.concat(cr);
+  const mkt=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
+  ST.deskMkt=mkt; ST.mkt=mkt;
+  let rows=mkt==="crypto"?cr:fx;
   if(ST._pinAsset && ST._holdUntil && Date.now()<ST._holdUntil){
     const pin=ASSETS.find(a=>a.id===ST._pinAsset);
     if(pin) rows=[pin].concat(rows.filter(a=>a.id!==pin.id));
@@ -4112,8 +4112,8 @@ function setDeskTf(tf){
   deskRender();
 }
 function setDeskMkt(m){
-  ST.deskMkt=m||"all";
-  if(m==="crypto"||m==="fx"){ ST.mkt=m; ST.filt=m; }
+  ST.deskMkt=(m==="crypto")?"crypto":"fx";
+  ST.mkt=ST.deskMkt; ST.filt=ST.deskMkt;
   ST._viewA=null;
   ST._deskHtmlKey="";
   ST._scanGen=(ST._scanGen||0)+1;
