@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v175</title>
+<title>RyckTrader v176</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v175</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v176</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3872,7 +3872,7 @@ function deskBindCards(box){
     openA(bt.dataset.go);
   });
   box.querySelectorAll("[data-copy]").forEach(bt=>bt.onclick=e=>{ e.stopPropagation(); copyVexEntry(bt.dataset.copy); });
-  box.querySelectorAll(".ai-row").forEach(cd=>cd.onclick=()=>openA(cd.dataset.id));
+  box.querySelectorAll(".ai-row").forEach(cd=>cd.onclick=()=>{});
 }
 function deskPatchQuotes(){
   const box=$("aiList"); if(!box) return;
@@ -3893,6 +3893,7 @@ function deskRender(){
   const key=rows.map(a=>a.id).join(",")+"|"+(ST.tf||"60")+"|"+(ST.deskMkt||"all");
   if(ST._deskHtmlKey===key && box.querySelector(".ai-row")){
     deskPatchQuotes();
+    return;
     box.querySelectorAll(".ai-card").forEach(cd=>{
       const a=ASSETS.find(x=>x.id===cd.dataset.id); if(!a) return;
       const st=ST._deskSig&&ST._deskSig[a.id];
@@ -3934,7 +3935,8 @@ function seedLocalQuotes(){
   ST._deskPx=ST._deskPx||{};
   ASSETS.forEach(a=>{
     const cur=ST._deskPx[a.id];
-    if(cur && cur.last>0 && !cur.local) return;
+    if(cur && cur.last>0) return;
+    return;
     const bars=synthBars(a.id, +ST.tf||60, 48);
     const last=bars.at(-1).c, prev=bars[Math.max(0,bars.length-24)].c;
     ST._deskPx[a.id]={last,chg:prev?((last-prev)/prev)*100:0,local:1};
@@ -4171,9 +4173,9 @@ function deskBind(){
     mask.addEventListener("pointermove", move);
     mask.addEventListener("pointerup", end);
   }
-  setInterval(()=>{ if($("aiPanel") && !$("aiPanel").classList.contains("hidden") && !ST._viewA && ST.panelTab!=="sinais") deskPatchQuotes(); },15000);
+  setInterval(()=>{ if($("aiPanel") && !$("aiPanel").classList.contains("hidden") && !ST._viewA && ST.panelTab!=="sinais") deskPatchQuotes(); },4000);
   deskQuotes();
-  setInterval(deskQuotes,30000);
+  setInterval(deskQuotes,8000);
 }
 
 window._rtDeferredPrompt=null;
