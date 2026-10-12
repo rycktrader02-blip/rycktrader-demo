@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v185</title>
+<title>RyckTrader v188</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -772,11 +772,12 @@ if(!window._forceEntryTimer){
   window._forceEntryTimer = setInterval(()=>{
     try{
       if(ST.panelTab!=="sinais") return;
-      if(ST._entryOpen && ST._holdUntil && Date.now()<ST._holdUntil) return;
-      ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._mustEmit=1; ST._holdHtml="";
+      if(ST._entryOpen && ST._holdUntil && Date.now()<ST._holdUntil-5000) return;
+      ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._mustEmit=1; ST._holdHtml=""; ST._pinAsset="";
+      console.log("force entry cycle");
       runSig();
     }catch(e){}
-  }, 60000);
+  }, 45000);
 }
 
 </script>
@@ -793,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v185</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v188</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3058,9 +3059,8 @@ async function runSig(){
     /* feed local liberado */
     const px0=bars.at(-1).c;
     const nm0=String(a.name||"");
-    if(nm0==="CAD/CHF" && (px0<0.45 || px0>0.85)) return;
-    if(nm0==="EUR/USD" && (px0<0.9 || px0>1.3)) return;
-    if(nm0==="GBP/USD" && (px0<1.05 || px0>1.55)) return;
+    // filtros de preço relaxados para não bloquear forex
+    if(px0<=0 || !isFinite(px0)) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(!ST._pickId && (ST._usedIds||[]).indexOf(a.id)>=0){ ST._seenSkip=(ST._seenSkip||0)+1; }
     try{
