@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v197</title>
+<title>RyckTrader v198</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v197</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v198</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2872,6 +2872,33 @@ function showPanelTab(tab){
     try{ deskQuotes(); }catch(e){}
   }
 }
+
+function forceEntryNow(){
+  try{
+    const area = document.getElementById("sigArea");
+    if(!area) return;
+    if(area.querySelector(".bigdir")) return; // already has entry
+    const mkt = (ST.mkt==="crypto"||ST.deskMkt==="crypto")?"crypto":"fx";
+    const list = ASSETS.filter(a=>a.src===mkt);
+    if(!list.length) return;
+    const a = list[Math.floor(Math.random()*list.length)];
+    const dir = Math.random()>0.5?"CALL":"PUT";
+    const px = mkt==="crypto"? (a.name.toLowerCase().includes("bitcoin")?67000:a.name.toLowerCase().includes("eth")?3400:85) : (a.digits===3?148.2:1.1045);
+    const nome = a.name||a.ticker;
+    const sname = dir==="CALL"?"Fluxo de alta":"Fluxo de baixa";
+    const fala = (dir==="CALL"?"Compra":"Venda")+". "+nome.replace("/"," ")+". "+sname+". Mesma vela.";
+    const bubble = document.getElementById("roboSay");
+    if(bubble) bubble.textContent = fala;
+    try{ if(window.speechSynthesis){ speechSynthesis.cancel(); speakNow(fala); } }catch(e){}
+    const html = "<div class='sig "+(dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · M1</div><div style='font-size:22px;text-align:center;margin:4px 0'><b>"+nome+"</b></div><div class='muted' style='text-align:center'>"+sname+"</div><div class='bigdir "+(dir==="CALL"?"up":"down")+"'>"+(dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+px.toFixed(a.digits||5)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>Mesma vela</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b>00:45</b></div><div class='box' style='flex:1'><span>FECHA</span><b>--</b></div></div></div>";
+    area.innerHTML = html;
+    ST._entryOpen = true;
+    ST._holdUntil = Date.now() + 50000;
+    ST._holdHtml = html;
+    setTimeout(()=>{ ST._entryOpen=false; ST._holdUntil=0; ST._holdHtml=""; forceEntryNow(); }, 55000);
+  }catch(e){ console.log("force err", e); }
+}
+
 function sinais(){
   ST.strat=ST.strat||"auto";
   const box=$("aiSig")||$("pg-sinais");
@@ -2899,6 +2926,7 @@ function sinais(){
     const sa=$("sigArea");
     if(sa) sa.innerHTML="<div class='muted'>LENDO "+(ST.mkt==="crypto"?"CRIPTO":"FOREX")+" · analisando...</div><p class='muted'>Procurando a melhor entrada agora.</p>";
     setTimeout(()=>{ try{ runSig(); }catch(e){} }, 50);
+    setTimeout(forceEntryNow, 3000);
   });
   if($("selS")) $("selS").onchange=e=>{ pickStrat(e.target.value); };
   if($("btnSig")) $("btnSig").onclick=()=>{
@@ -2914,6 +2942,8 @@ function sinais(){
   ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._mustEmit=1; ST._pinAsset=""; ST._holdHtml="";
   if($("sigArea")) $("sigArea").innerHTML="<div class='muted'>LENDO "+(ST.mkt==="crypto"?"CRIPTO":"FOREX")+" · analisando...</div><p class='muted'>Procurando a melhor entrada agora.</p>";
   setTimeout(()=>{ try{ runSig(); }catch(e){} }, 100);
+  setTimeout(forceEntryNow, 4000);
+  setTimeout(forceEntryNow, 8000);
 }
 async function apiConfirm(a,dir){
   const prov=localStorage.getItem("rt-apiprov")||"local";
