@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v188</title>
+<title>RyckTrader v191</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v188</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v191</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3919,7 +3919,7 @@ function deskPairs(){
   if(q) rows=rows.filter(a=>(a.name+" "+a.ticker+" "+a.id).toLowerCase().indexOf(q)>=0);
   return rows;
 }
-function deskGroup(a){ return a.src==="fx"?"MOEDAS":a.src==="stock"?"AÇÕES":"CRYPTOS"; }
+function deskGroup(a){ return a.src==="fx"?"FOREX":a.src==="crypto"?"CRIPTO":"OUTROS"; }
 function deskLabel(a){
   if(a.src==="fx" && /^[A-Z]{6}$/.test(a.ticker)) return a.ticker.slice(0,3)+"/"+a.ticker.slice(3);
   return a.name;
@@ -4042,12 +4042,16 @@ function deskRender(){
   if(ST.panelTab==="sinais") return;
   const box=$("aiList"); if(!box) return;
   box.style.display="block";
-  const rows=deskPairs();
+  // listas separadas: FOREX e CRIPTO
+  const fxRows=ASSETS.filter(a=>a.src==="fx");
+  const crRows=ASSETS.filter(a=>a.src==="crypto");
+  const mkt=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
+  const rows = mkt==="crypto" ? crRows : fxRows;
   if(!rows.length){
     box.innerHTML="<div class='ai-sec'>SEM PARES</div>";
     return;
   }
-  const key=rows.map(a=>a.id).join(",")+"|"+(ST.tf||"60")+"|"+(ST.deskMkt||"all");
+  const key=rows.map(a=>a.id).join(",")+"|"+(ST.tf||"60")+"|"+mkt;
   if(ST._deskHtmlKey===key && box.querySelector(".ai-row")){
     deskPatchQuotes();
     return;
@@ -4078,12 +4082,13 @@ function deskRender(){
   }
   ST._deskHtmlKey=key;
   const y=box.scrollTop;
-  let html="", last="";
-  rows.forEach(a=>{
-    const g=deskGroup(a);
-    if(g!==last){ html+="<div class='ai-sec'>"+g+"</div>"; last=g; }
-    html+=deskCardHtml(a);
-  });
+  let html="";
+  // lista separada FOREX
+  html += "<div class='ai-sec'>FOREX</div>";
+  ASSETS.filter(a=>a.src==="fx").forEach(a=>{ html+=deskCardHtml(a); });
+  // lista separada CRIPTO
+  html += "<div class='ai-sec'>CRIPTO</div>";
+  ASSETS.filter(a=>a.src==="crypto").forEach(a=>{ html+=deskCardHtml(a); });
   box.innerHTML=html;
   box.scrollTop=y;
   deskBindCards(box);
