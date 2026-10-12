@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v185</title>
+<title>RyckTrader v186</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v185</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v186</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3469,7 +3469,10 @@ async function runSig(){
     if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700);
     return;
   }
-  const holdSec=leftSec; ST._nextAt=(candleOpen+perSec)*1000; ST._pinAsset="";
+  // hold fixo de 60 segundos para próxima entrada
+  const holdMs = 60000;
+  ST._nextAt = Date.now() + holdMs;
+  ST._pinAsset="";
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._lastShown=best.a.id;
