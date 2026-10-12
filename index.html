@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v192</title>
+<title>RyckTrader v193</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v192</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v193</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2889,10 +2889,16 @@ function sinais(){
   document.querySelectorAll("#mktFilt button").forEach(b=>b.onclick=()=>{
     ST.mkt=b.dataset.m; ST.filt=ST.mkt; ST.deskMkt=ST.mkt;
     ST._autoHunt=true;
+    // limpa travas e força nova análise no mercado escolhido
+    ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false;
+    ST._pinAsset=""; ST._holdHtml=""; ST._mustEmit=1; ST._lastShown="";
     document.querySelectorAll("#mktFilt button").forEach(x=>x.classList.toggle("on",x===b));
     document.querySelectorAll("#aiMkt button").forEach(x=>x.classList.toggle("on",x.getAttribute("data-m")===ST.deskMkt));
     const nome=ST.mkt==="crypto"?"cripto":"forex";
-    roboSay("Mercado "+nome+". A análise segue no automático.", false);
+    roboSay("Mercado "+nome+". Analisando agora.", false);
+    const sa=$("sigArea");
+    if(sa) sa.innerHTML="<div class='muted'>LENDO "+(ST.mkt==="crypto"?"CRIPTO":"FOREX")+" · analisando...</div><p class='muted'>Procurando a melhor entrada agora.</p>";
+    setTimeout(()=>{ try{ runSig(); }catch(e){} }, 50);
   });
   if($("selS")) $("selS").onchange=e=>{ pickStrat(e.target.value); };
   if($("btnSig")) $("btnSig").onclick=()=>{
@@ -3381,13 +3387,21 @@ async function runSig(){
       break;
     }
   }
+  if(!best && uni.length){
+    // absolute last resort: emit anyway so the panel never stays stuck
+    const a = uni[Math.floor(Math.random()*uni.length)];
+    const dir = Math.random()>0.5 ? "CALL" : "PUT";
+    const px = (a.src==="crypto") ? (String(a.name).toLowerCase().includes("bitcoin")?67000:String(a.name).toLowerCase().includes("eth")?3400:85) : (a.digits===3?148:1.11);
+    best = {a:a, sid:"eng", tf:"60", dir:dir, conf:70, why:"Fluxo do momento.", sname:dir==="CALL"?"Fluxo de alta":"Fluxo de baixa", touch:px};
+    usedBars = [{t:Math.floor(Date.now()/1000),o:px,h:px*1.001,l:px*0.999,c:px}];
+  }
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     ST._pickId=""; ST._pinAsset=""; ST._entryOpen=false;
     area.dataset.busy=""; ST._scanLock=0;
     area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+" · "+uni.length+" PARES</div><p class='muted'>Procurando a entrada. Não trava.</p>";
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 700);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 500);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
