@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v191</title>
+<title>RyckTrader v192</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v191</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v192</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2982,12 +2982,13 @@ async function runSig(){
   try{ armRot(); }catch(e){}
 
  const area=$("sigArea"); if(!area) return;
+ // só segura se ainda estiver no tempo da entrada atual
  if(ST._entryOpen && ST._holdUntil && Date.now()<ST._holdUntil){
    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
    return;
  }
- if(ST._scanLock && Date.now()-(ST._scanAt||0)>1800) ST._scanLock=0;
- if(ST._scanLock) return;
+ // limpa todas as travas antes de buscar a próxima
+ ST._scanLock=0; ST._entryOpen=false; ST._nextAt=0; ST._holdUntil=0; ST._pinAsset="";
  ST._scanAt=Date.now();
  ST._scanLock=1;
  ST._scanGen=(ST._scanGen||0)+1;
@@ -3028,11 +3029,7 @@ async function runSig(){
   if(want!=="auto" && ops[0]!==want) ops.splice(0,ops.length,want);
   const focusSid=ops[0];
   const opLab=((STRATS.find(s=>s.id===focusSid)||{}).short||focusSid);
-  if(ST._entryOpen || (ST._holdUntil && Date.now()<ST._holdUntil)){
-    if(ST._holdHtml) area.innerHTML=ST._holdHtml;
-    area.dataset.busy=""; ST._scanLock=0; return;
-  }
-  if(ST._entryOpen){ if(ST._holdHtml) area.innerHTML=ST._holdHtml; area.dataset.busy=""; ST._scanLock=0; return; }
+  // travas de hold removidas aqui
   let best=null, usedBars=null, hits=[];
   function seenKey(a,dir,tf){
       const step=60;
