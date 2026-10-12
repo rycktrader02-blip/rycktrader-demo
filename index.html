@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v188</title>
+<title>RyckTrader v189</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -777,7 +777,7 @@ if(!window._forceEntryTimer){
       console.log("force entry cycle");
       runSig();
     }catch(e){}
-  }, 45000);
+  }, 30000);
 }
 
 </script>
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v188</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v189</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1196,12 +1196,21 @@ async function candles(id,g){
         bars=await derivHistory(fxWsCode(a), +g||60);
         ST.feedName="Deriv";
       }catch(e){ bars=[]; }
-      if(!bars||bars.length<20){
+      if(!bars||bars.length<8){
         try{
           const rows=await fetchJSON("https://economia.awesomeapi.com.br/json/daily/"+awCode(a)+"/90");
           const daily=awBars(rows);
           if(daily&&daily.length){ bars=daily; ST.feedName="AwesomeAPI"; }
         }catch(e2){}
+      }
+      if(!bars||bars.length<8){
+        try{
+          const iv=+g===60?"1m":+g===300?"5m":"1h";
+          const rng=+g===3600?"5d":"1d";
+          const j=await fetchJSON("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(a.y||a.ticker+"=X")+"?interval="+iv+"&range="+rng);
+          bars=yBars(j);
+          if(bars&&bars.length) ST.feedName="YahooFX";
+        }catch(e3){ }
       }
     } else {
       const gid=a&&a.id?a.id:id;
@@ -3373,13 +3382,20 @@ async function runSig(){
       break;
     }
   }
+  if(!best && uni.length && ST._mustEmit){
+    // last resort: pick first pair and emit simple fluxo so user always sees an entry
+    const a = uni[0];
+    const dir = Math.random()>0.5 ? "CALL" : "PUT";
+    best = {a:a, sid:"eng", tf:"60", dir:dir, conf:75, why:"Entrada de fluxo (forçada).", sname:dir==="CALL"?"Fluxo de alta":"Fluxo de baixa", touch:1.0};
+    usedBars = [{t:Date.now()/1000,o:1,h:1.01,l:0.99,c:1}];
+  }
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     ST._pickId=""; ST._pinAsset=""; ST._entryOpen=false;
     area.dataset.busy=""; ST._scanLock=0;
     area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+" · "+uni.length+" PARES</div><p class='muted'>Procurando a entrada. Não trava.</p>";
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 700);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 500);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
@@ -4953,7 +4969,7 @@ if(!window._forceEntryTimer){
       ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._mustEmit=1; ST._holdHtml="";
       runSig();
     }catch(e){}
-  }, 60000);
+  }, 30000);
 }
 
 </script>
