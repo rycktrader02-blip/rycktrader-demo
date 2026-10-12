@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v179</title>
+<title>RyckTrader v180</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v179</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v180</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1580,6 +1580,45 @@ function evalSraw(id,bars){
     if(b.l<=bars[i-1].l && b.l<=bars[i-2].l && b.l<=bars[i+1].l) pts.push({i,k:"l",p:b.l});
   }
   return pts;
+}
+
+function candlePattern(bars){
+  if(!bars||bars.length<6) return null;
+  const last=bars.at(-1), prev=bars.at(-2), a=bars.at(-3);
+  if(!last||!prev) return null;
+  const rng=Math.max(last.h-last.l,1e-12);
+  const body=Math.abs(last.c-last.o);
+  const loW=Math.min(last.o,last.c)-last.l;
+  const hiW=last.h-Math.max(last.o,last.c);
+  const box=bars.slice(-14,-1);
+  const hi=Math.max.apply(null,box.map(b=>b.h)), lo=Math.min.apply(null,box.map(b=>b.l));
+  const span=Math.max(hi-lo,1e-12);
+  const pos=(last.c-lo)/span;
+  const reds=bars.slice(-4).filter(b=>b.c<b.o).length;
+  const greens=bars.slice(-4).filter(b=>b.c>b.o).length;
+  const fell=bars.slice(-5,-1).filter(b=>b.c<b.o).length>=2;
+  const rose=bars.slice(-5,-1).filter(b=>b.c>b.o).length>=2;
+  const bull=last.c>last.o, bear=last.c<last.o;
+  const aB=Math.abs(a.c-a.o), pB=Math.abs(prev.c-prev.o);
+  if(a && a.c<a.o && pB<aB*0.5 && bull && last.c>(a.o+a.c)/2 && pos<0.55) return {dir:"CALL",sname:"Estrela da manhã",why:"Três velas de reversão no fundo.",conf:91};
+  if(a && a.c>a.o && pB<aB*0.5 && bear && last.c<(a.o+a.c)/2 && pos>0.45) return {dir:"PUT",sname:"Estrela da noite",why:"Três velas de reversão no topo.",conf:91};
+  const aT=Math.max(prev.o,prev.c), aBt=Math.min(prev.o,prev.c), bT=Math.max(last.o,last.c), bBt=Math.min(last.o,last.c);
+  if(prev.c<prev.o && bull && bBt<=aBt && bT>=aT && pos<0.62) return {dir:"CALL",sname:"Engolfo de alta",why:"Vela verde engoliu a vermelha.",conf:90};
+  if(prev.c>prev.o && bear && bBt<=aBt && bT>=aT && pos>0.38) return {dir:"PUT",sname:"Engolfo de baixa",why:"Vela vermelha engoliu a verde.",conf:90};
+  if(body<=rng*0.35 && loW>=body*2 && loW>=rng*0.5 && hiW<=rng*0.2 && pos<=0.35 && fell && bull) return {dir:"CALL",sname:"Martelo",why:"Pavio inferior rejeitou o fundo.",conf:90};
+  if(body<=rng*0.35 && hiW>=body*2 && hiW>=rng*0.5 && loW<=rng*0.2 && pos>=0.65 && rose && bear) return {dir:"PUT",sname:"Estrela cadente",why:"Pavio superior rejeitou o topo.",conf:90};
+  if(body<=rng*0.35 && loW>=body*2 && loW>=rng*0.5 && hiW<=rng*0.2 && pos>=0.65 && rose && bear) return {dir:"PUT",sname:"Enforcado",why:"Pavio inferior no topo da alta.",conf:88};
+  if(body<=rng*0.12 && hiW>=rng*0.6 && loW<=rng*0.12 && pos>=0.65 && rose) return {dir:"PUT",sname:"Lápide",why:"Doji lápide no topo.",conf:89};
+  if(body<=rng*0.12 && loW>=rng*0.6 && hiW<=rng*0.12 && pos<=0.35 && fell) return {dir:"CALL",sname:"Libélula",why:"Doji libélula no fundo.",conf:89};
+  if(a && a.c<a.o && prev.c<prev.o && bear && prev.c<a.c && last.c<prev.c && pos>0.3) return {dir:"PUT",sname:"3 corvos",why:"Três vermelhas fechando mais baixo.",conf:90};
+  if(a && a.c>a.o && prev.c>prev.o && bull && prev.c>a.c && last.c>prev.c && pos<0.7) return {dir:"CALL",sname:"3 soldados",why:"Três verdes fechando mais alto.",conf:90};
+  if(body>=rng*0.85 && hiW<=rng*0.08 && loW<=rng*0.08 && bull && pos<0.55 && greens<=2) return {dir:"CALL",sname:"Marubozu",why:"Vela cheia de alta.",conf:86};
+  if(body>=rng*0.85 && hiW<=rng*0.08 && loW<=rng*0.08 && bear && pos>0.45 && reds<=2) return {dir:"PUT",sname:"Marubozu",why:"Vela cheia de baixa.",conf:86};
+  if(body<=rng*0.15 && hiW>=rng*0.3 && loW>=rng*0.3 && pos>=0.7 && rose && bear) return {dir:"PUT",sname:"Doji",why:"Doji de indecisão no topo.",conf:84};
+  if(body<=rng*0.15 && hiW>=rng*0.3 && loW>=rng*0.3 && pos<=0.3 && fell && bull) return {dir:"CALL",sname:"Doji",why:"Doji de indecisão no fundo.",conf:84};
+  if(bull && greens>=1 && greens<=2 && pos>0.2 && pos<0.6) return {dir:"CALL",sname:"Fluxo de alta",why:"Vela verde a favor da alta.",conf:82};
+  if(bear && reds>=1 && reds<=2 && pos>0.4 && pos<0.8) return {dir:"PUT",sname:"Fluxo de baixa",why:"Vela vermelha a favor da baixa.",conf:82};
+  return null;
 }
 function lineReject(bars){
   const src=bars||[];
@@ -3007,6 +3046,15 @@ async function runSig(){
     if(nm0==="GBP/USD" && (px0<1.05 || px0>1.55)) return;
     ST._scanBars=ST._scanBars||{}; ST._scanBars[a.id]=bars;
     if(!ST._pickId && (ST._usedIds||[]).indexOf(a.id)>=0){ ST._seenSkip=(ST._seenSkip||0)+1; }
+    try{
+      const pat=candlePattern(bars);
+      if(pat && pat.dir){
+        const pack={a:a,sid:"pad",tf:tf,dir:pat.dir,conf:pat.conf||86,why:pat.why,sname:pat.sname,touch:bars.at(-1).c,bars:bars};
+        pack._rank=(pat.conf||86)+8;
+        hits.push(pack);
+        if(!best || pack._rank>(best._rank||0)){ best=pack; usedBars=bars; }
+      }
+    }catch(e){}
     const fast=["eng","pad","pin","star","hmr","cnt_sol","flag","tri","bos","pull","dark","tw","sfp","ttop","hs","ihs","mdoj","qsd","krev","ob","fvg","pa","srx"];
     const order=want==="auto"?fast.filter(s=>ops.includes(s)):ops.slice();
     for(const sid of order){
