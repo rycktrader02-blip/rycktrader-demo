@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v174</title>
+<title>RyckTrader v175</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v174</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v175</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3086,7 +3086,8 @@ async function runSig(){
       const touchBonus=ev.touch?4:0;
       const trendBonus=(contSet[sid]&&((ev.dir==="PUT"&&trendDn)||(ev.dir==="CALL"&&trendUp)))?14:0;
       const revBonus=(revSet[sid]&&((ev.dir==="PUT"&&posR>=0.68)||(ev.dir==="CALL"&&posR<=0.32)))?6:0;
-      pack._rank=(ev.conf||70)+touchBonus+trendBonus+revBonus+(sid==="srx"?-6:0);
+      const used=(ST._usedIds||[]).indexOf(a.id)>=0;
+      pack._rank=(ev.conf||70)+touchBonus+trendBonus+revBonus+(sid==="srx"?-6:0)-(used?40:0);
       hits.push(pack);
       if(!best || pack._rank>(best._rank||0)){ best=pack; usedBars=bars; }
     }
@@ -3186,10 +3187,15 @@ async function runSig(){
     const t=trend(usedBars);
     // seta manda: nao inverte o lado
   }
-  if(!best && hits && hits.length){
+  if(hits && hits.length){
     hits.sort((a,b)=>(b._rank||0)-(a._rank||0));
-    const alt=hits.find(h=>h.sid && !ST._firedSid[h.sid+"|"+slot] && (ST._usedIds||[]).indexOf(h.a.id)<0)||hits.find(h=>h.sid && !ST._firedSid[h.sid+"|"+slot]);
-    if(alt){ best=alt; usedBars=usedBars||alt.bars||null; }
+    const freshHit=hits.find(h=>h.sid && (ST._usedIds||[]).indexOf(h.a.id)<0 && h.a.id!==ST._lastShown);
+    if(freshHit){ best=freshHit; usedBars=freshHit.bars||usedBars; }
+    else {
+      ST._usedIds=[];
+      const alt=hits.find(h=>h.a.id!==ST._lastShown)||hits[0];
+      if(alt){ best=alt; usedBars=alt.bars||usedBars; }
+    }
   }
   const lastT=usedBars?usedBars.at(-1).t:Math.floor(Date.now()/1000);
   const closeAt=nextEnd(lastT);
@@ -3363,7 +3369,7 @@ async function runSig(){
     ST._mustEmit=0;
     ST._pairSince=Date.now();
     ST._usedIds=(ST._usedIds||[]).filter(x=>x!==best.a.id).concat([best.a.id]);
-    if(ST._usedIds.length>18) ST._usedIds=ST._usedIds.slice(-18);
+    if(ST._usedIds.length>=Math.max(8, uni.length-1)) ST._usedIds=[];
     const lastB=usedBars.at(-1), prevB=usedBars.at(-2)||lastB;
     const td=trend(usedBars);
     const rsiv=(rsi(usedBars.map(b=>b.c)).at(-1)||50).toFixed(1);
