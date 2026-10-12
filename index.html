@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v199</title>
+<title>RyckTrader v200</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v199</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v200</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2880,17 +2880,23 @@ function forceEntryNow(){
     const mkt = (ST.mkt==="crypto"||ST.deskMkt==="crypto")?"crypto":"fx";
     const list = ASSETS.filter(a=>a.src===mkt);
     if(!list.length) return;
-    // rotate so it doesn't stay on the same pair
     ST._forceIdx = (ST._forceIdx||0) + 1;
     const a = list[ST._forceIdx % list.length];
     const dir = Math.random()>0.5?"CALL":"PUT";
-    let px = 1.1045;
-    if(mkt==="crypto"){
-      const n=(a.name||"").toLowerCase();
-      px = n.includes("bitcoin")?67200 : n.includes("eth")?3450 : n.includes("sol")?148 : 85;
-    } else {
-      px = (a.digits===3)?148.25 : (a.digits===2)?1.0850 : 1.1045;
-    }
+    // realistic prices by ticker
+    const PX = {
+      "EURUSD":1.1150,"GBPUSD":1.3210,"USDJPY":149.80,"AUDUSD":0.6620,"USDCAD":1.4280,
+      "USDCHF":0.8650,"NZDUSD":0.5980,"EURGBP":0.8450,"EURJPY":171.50,"GBPJPY":198.20,
+      "AUDJPY":110.40,"EURCHF":0.9650,"GBPCHF":1.1430,"AUDCHF":0.7050,"AUDCAD":0.9940,
+      "CADJPY":148.25,"CHFJPY":173.10,"EURAUD":1.6850,"GBPAUD":1.9950,"GBPNZD":2.3650,
+      "NZDJPY":89.60,"AUDNZD":1.1050,"EURNZD":1.8650,"GBPCAD":1.8850,"USDMXN":19.85,
+      "BTCUSD":67200,"ETHUSD":3450,"SOLUSD":148,"BNBUSD":590,"XRPUSD":0.55,
+      "ADAUSD":0.35,"DOGEUSD":0.12,"LTCUSD":72,"AVAXUSD":28,"LINKUSD":12.5
+    };
+    const tkr = String(a.ticker||a.name||"").replace("/","").toUpperCase();
+    let px = PX[tkr] || (a.digits===3?150:1.10);
+    // small random variation so it looks live
+    px = px * (1 + (Math.random()-0.5)*0.001);
     const nome = a.name||a.ticker||"PAR";
     const sname = dir==="CALL"?"Fluxo de alta":"Fluxo de baixa";
     const fala = (dir==="CALL"?"Compra":"Venda")+". "+nome.replace("/"," ")+". "+sname+". Mesma vela.";
@@ -2898,21 +2904,22 @@ function forceEntryNow(){
     if(bubble) bubble.textContent = fala;
     try{ if(window.speechSynthesis){ speechSynthesis.cancel(); speakNow(fala); } }catch(e){}
     const digits = a.digits||5;
-    const html = "<div class='sig "+(dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · M1</div><div style='font-size:22px;text-align:center;margin:4px 0'><b>"+nome+"</b></div><div class='muted' style='text-align:center'>"+sname+"</div><div class='bigdir "+(dir==="CALL"?"up":"down")+"'>"+(dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+Number(px).toFixed(digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>Mesma vela</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>00:55</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>--</b></div></div></div>";
+    const html = "<div class='sig "+(dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · M1</div><div style='font-size:22px;text-align:center;margin:4px 0'><b>"+nome+"</b></div><div class='muted' style='text-align:center'>"+sname+"</div><div class='bigdir "+(dir==="CALL"?"up":"down")+"'>"+(dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+Number(px).toFixed(digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>Mesma vela</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>00:55</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>00:55</b></div></div></div>";
     area.innerHTML = html;
     ST._entryOpen = true;
     ST._holdUntil = Date.now() + 60000;
     ST._holdHtml = html;
-    // countdown clock
     if(ST._clockT) clearInterval(ST._clockT);
     let left = 55;
     ST._clockT = setInterval(()=>{
       left = Math.max(0, left-1);
       const clk = document.getElementById("velaClock");
-      if(clk) clk.textContent = "00:"+String(left).padStart(2,"0");
+      const lf = document.getElementById("left");
+      const txt = "00:"+String(left).padStart(2,"0");
+      if(clk) clk.textContent = txt;
+      if(lf) lf.textContent = txt;
       if(left<=0){ clearInterval(ST._clockT); ST._clockT=null; }
     }, 1000);
-    // next entry in 60s
     if(ST._forceT) clearTimeout(ST._forceT);
     ST._forceT = setTimeout(forceEntryNow, 60000);
   }catch(e){ console.log("force err", e); }
