@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v201</title>
+<title>RyckTrader v202</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v201</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v202</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2880,55 +2880,56 @@ async function forceEntryNow(){
     const mkt = (ST.mkt==="crypto"||ST.deskMkt==="crypto")?"crypto":"fx";
     const list = ASSETS.filter(a=>a.src===mkt);
     if(!list.length) return;
-    // scan up to 6 pairs looking for a real pattern
-    for(let k=0;k<6;k++){
+    for(let k=0;k<8;k++){
       ST._forceIdx = (ST._forceIdx||0) + 1;
       const a = list[ST._forceIdx % list.length];
       let bars = null;
       try{
         bars = await Promise.race([
           candles(a.id, 60),
-          new Promise(r=>setTimeout(()=>r(null), 2500))
+          new Promise(r=>setTimeout(()=>r(null), 3000))
         ]);
       }catch(e){ bars = null; }
       if(!bars || bars.length < 6) continue;
       const last = bars[bars.length-1];
       const prev = bars[bars.length-2];
       const p2 = bars[bars.length-3];
+      const px = last.c;
+      // reject unrealistic prices for the pair
+      const t = (a.ticker||"").toUpperCase();
+      if(t.includes("JPY") && px < 50) continue;
+      if(t.includes("GBP") && t.includes("NZD") && px < 1.5) continue;
+      if(t.includes("CAD") && t.includes("CHF") && px > 1.5) continue;
+      if(t.includes("AUD") && t.includes("CAD") && px > 1.2) continue;
+      if(px < 0.01 || px > 100000) continue;
       // detect real patterns
       let dir=null, sname=null, why=null;
-      // engolfo
       const aT=Math.max(prev.o,prev.c), aB=Math.min(prev.o,prev.c);
       const bT=Math.max(last.o,last.c), bB=Math.min(last.o,last.c);
       if(prev.c<prev.o && last.c>last.o && bB<=aB && bT>=aT){ dir="CALL"; sname="Engolfo de alta"; why="Engolfo de alta no gráfico."; }
       else if(prev.c>prev.o && last.c<last.o && bB<=aB && bT>=aT){ dir="PUT"; sname="Engolfo de baixa"; why="Engolfo de baixa no gráfico."; }
-      // 3 soldados / corvos
       if(!dir && p2 && last.c>last.o && prev.c>prev.o && p2.c>p2.o && last.c>prev.c && prev.c>p2.c){ dir="CALL"; sname="3 soldados"; why="Três verdes fechando mais alto."; }
       if(!dir && p2 && last.c<last.o && prev.c<prev.o && p2.c<p2.o && last.c<prev.c && prev.c<p2.c){ dir="PUT"; sname="3 corvos"; why="Três vermelhas fechando mais baixo."; }
-      // martelo / estrela
       const rng = Math.max(last.h-last.l,1e-12);
       const body = Math.abs(last.c-last.o);
       const lower = Math.min(last.o,last.c)-last.l;
       const upper = last.h-Math.max(last.o,last.c);
       if(!dir && lower>body*2 && upper<body*0.5 && last.c>last.o){ dir="CALL"; sname="Martelo"; why="Martelo de reversão."; }
       if(!dir && upper>body*2 && lower<body*0.5 && last.c<last.o){ dir="PUT"; sname="Estrela cadente"; why="Estrela cadente."; }
-      // suporte / resistência simples
       const box = bars.slice(-15,-1);
       if(box.length>5){
         const bh = Math.max.apply(null, box.map(b=>b.h));
         const bl = Math.min.apply(null, box.map(b=>b.l));
-        if(!dir && last.l<=bl*1.001 && last.c>last.o){ dir="CALL"; sname="Suporte"; why="Tocou no suporte e reverteu."; }
-        if(!dir && last.h>=bh*0.999 && last.c<last.o){ dir="PUT"; sname="Resistência"; why="Tocou na resistência e reverteu."; }
+        if(!dir && last.l<=bl*1.0015 && last.c>last.o){ dir="CALL"; sname="Suporte"; why="Tocou no suporte e reverteu."; }
+        if(!dir && last.h>=bh*0.9985 && last.c<last.o){ dir="PUT"; sname="Resistência"; why="Tocou na resistência e reverteu."; }
       }
-      if(!dir) continue; // no clear pattern, try next pair
-      // found one
+      if(!dir) continue;
       const nome = a.name||a.ticker||"PAR";
       const fala = (dir==="CALL"?"Compra":"Venda")+". "+nome.replace("/"," ")+". "+sname+". Mesma vela.";
       const bubble = document.getElementById("roboSay");
       if(bubble) bubble.textContent = fala;
       try{ if(window.speechSynthesis){ speechSynthesis.cancel(); speakNow(fala); } }catch(e){}
       const digits = a.digits||5;
-      const px = last.c;
       const html = "<div class='sig "+(dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · M1</div><div style='font-size:22px;text-align:center;margin:4px 0'><b>"+nome+"</b></div><div class='muted' style='text-align:center'>"+sname+"</div><div class='bigdir "+(dir==="CALL"?"up":"down")+"'>"+(dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+Number(px).toFixed(digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>Mesma vela</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>00:55</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>00:55</b></div></div><p class='muted'>"+why+"</p></div>";
       area.innerHTML = html;
       ST._entryOpen = true;
@@ -2949,10 +2950,9 @@ async function forceEntryNow(){
       ST._forceT = setTimeout(forceEntryNow, 60000);
       return;
     }
-    // nothing clear found, try again in 8s
     if(ST._forceT) clearTimeout(ST._forceT);
-    ST._forceT = setTimeout(forceEntryNow, 8000);
-  }catch(e){ console.log("force err", e); setTimeout(forceEntryNow, 10000); }
+    ST._forceT = setTimeout(forceEntryNow, 6000);
+  }catch(e){ console.log("force err", e); setTimeout(forceEntryNow, 8000); }
 }
 
 function sinais(){
