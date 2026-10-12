@@ -7,7 +7,16 @@
 <body>
 <p>v206 - listas separadas</p>
 <script>
-// placeholder - full content too large for this call
+// full content will be updated in next step
+function deskRender(){
+  const mkt=(ST.deskMkt==="crypto"||ST.mkt==="crypto")?"crypto":"fx";
+  let html="";
+  if(mkt==="crypto"){
+    html += "<div class='ai-sec'>CRIPTO</div>";
+  }else{
+    html += "<div class='ai-sec'>FOREX</div>";
+  }
+}
 </script>
 </body>
 </html>
