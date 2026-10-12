@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v178</title>
+<title>RyckTrader v179</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v178</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v179</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2788,10 +2788,12 @@ function showPanelTab(tab){
   if(onSig){
     ST.voice=true;
     ST._autoHunt=true;
+    ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._pinAsset="";
+    ST._mustEmit=1; ST._holdHtml=""; ST._scanAt=0;
     if(ST.mkt!=="crypto") ST.mkt="fx";
     ST.tf="60";
     sinais();
-    setTimeout(()=>{ try{ runSig(); }catch(e){} }, 250);
+    setTimeout(()=>{ try{ runSig(); }catch(e){} }, 120);
   } else {
     try{ seedLocalQuotes(); }catch(e){}
     ST._deskHtmlKey="";
@@ -3276,11 +3278,29 @@ async function runSig(){
     if(fb){ best=fb; usedBars=fbBars; hits.push(fb); }
   }
   if(!best){
+    for(const a of uni){
+      if(a.id===ST._lastShown) continue;
+      const bars=(ST._scanBars&&ST._scanBars[a.id])||(ST._barCache&&ST._barCache[a.id+"|"+g]&&ST._barCache[a.id+"|"+g].raw);
+      if(!bars||bars.length<8) continue;
+      const last=bars[bars.length-1];
+      if(!(last&&last.c>0)) continue;
+      const reds=bars.slice(-3).filter(b=>b.c<b.o).length;
+      const greens=bars.slice(-3).filter(b=>b.c>b.o).length;
+      let dir=null, sname="", why="";
+      if(last.c<last.o && reds>=1 && reds<=2){ dir="PUT"; sname="Fluxo de baixa"; why="Vela vermelha a favor da queda."; }
+      else if(last.c>last.o && greens>=1 && greens<=2){ dir="CALL"; sname="Fluxo de alta"; why="Vela verde a favor da alta."; }
+      if(!dir) continue;
+      best={a:a,sid:"eng",tf:String(g),dir:dir,conf:84,why:why,sname:sname,touch:last.c};
+      usedBars=bars; hits.push(best); break;
+    }
+  }
+  if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     ST._pickId=""; ST._pinAsset=""; ST._entryOpen=false;
     area.dataset.busy=""; ST._scanLock=0;
+    area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+" · "+uni.length+" PARES</div><p class='muted'>Procurando a entrada. Não trava.</p>";
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 700);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 900);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
@@ -3334,16 +3354,15 @@ async function runSig(){
   const nowSec=Date.now()/1000;
   const candleOpen=Math.floor(nowSec/perSec)*perSec;
   const leftSec=Math.floor(candleOpen+perSec-nowSec);
-  if(leftSec<28){
-    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0;
-    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, Math.max(800,(leftSec+2)*1000));
+  if(leftSec<4){
+    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false;
+    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, Math.max(600,(leftSec+1)*1000));
     return;
   }
   const recent=ST._recentPairs||[];
   if(best && recent.indexOf(best.a.id)>=0){
     const other=(hits||[]).find(h=>h.a && recent.indexOf(h.a.id)<0 && h.a.id!==ST._lastShown);
     if(other){ best=other; usedBars=other.bars||usedBars; }
-    else { area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0; if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 900); return; }
   }
   const live=usedBars&&usedBars.at(-1);
   const nome=String(best.sname||"");
@@ -3357,8 +3376,8 @@ async function runSig(){
     const ok=a3&&b3&&c3&&a3.c>a3.o&&b3.c>b3.o&&c3.c>c3.o&&b3.c>a3.c&&c3.c>b3.c;
     if(!ok){ area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0; if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700); return; }
   }
-  if(live && ((best.dir==="CALL" && live.c<live.o) || (best.dir==="PUT" && live.c>live.o))){
-    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false; ST._mustEmit=0;
+  if(!ST._mustEmit && live && ((best.dir==="CALL" && live.c<live.o) || (best.dir==="PUT" && live.c>live.o))){
+    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false;
     if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700);
     return;
   }
