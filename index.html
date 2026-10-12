@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v200</title>
+<title>RyckTrader v201</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v200</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v201</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2873,56 +2873,86 @@ function showPanelTab(tab){
   }
 }
 
-function forceEntryNow(){
+async function forceEntryNow(){
   try{
     const area = document.getElementById("sigArea");
     if(!area) return;
     const mkt = (ST.mkt==="crypto"||ST.deskMkt==="crypto")?"crypto":"fx";
     const list = ASSETS.filter(a=>a.src===mkt);
     if(!list.length) return;
-    ST._forceIdx = (ST._forceIdx||0) + 1;
-    const a = list[ST._forceIdx % list.length];
-    const dir = Math.random()>0.5?"CALL":"PUT";
-    // realistic prices by ticker
-    const PX = {
-      "EURUSD":1.1150,"GBPUSD":1.3210,"USDJPY":149.80,"AUDUSD":0.6620,"USDCAD":1.4280,
-      "USDCHF":0.8650,"NZDUSD":0.5980,"EURGBP":0.8450,"EURJPY":171.50,"GBPJPY":198.20,
-      "AUDJPY":110.40,"EURCHF":0.9650,"GBPCHF":1.1430,"AUDCHF":0.7050,"AUDCAD":0.9940,
-      "CADJPY":148.25,"CHFJPY":173.10,"EURAUD":1.6850,"GBPAUD":1.9950,"GBPNZD":2.3650,
-      "NZDJPY":89.60,"AUDNZD":1.1050,"EURNZD":1.8650,"GBPCAD":1.8850,"USDMXN":19.85,
-      "BTCUSD":67200,"ETHUSD":3450,"SOLUSD":148,"BNBUSD":590,"XRPUSD":0.55,
-      "ADAUSD":0.35,"DOGEUSD":0.12,"LTCUSD":72,"AVAXUSD":28,"LINKUSD":12.5
-    };
-    const tkr = String(a.ticker||a.name||"").replace("/","").toUpperCase();
-    let px = PX[tkr] || (a.digits===3?150:1.10);
-    // small random variation so it looks live
-    px = px * (1 + (Math.random()-0.5)*0.001);
-    const nome = a.name||a.ticker||"PAR";
-    const sname = dir==="CALL"?"Fluxo de alta":"Fluxo de baixa";
-    const fala = (dir==="CALL"?"Compra":"Venda")+". "+nome.replace("/"," ")+". "+sname+". Mesma vela.";
-    const bubble = document.getElementById("roboSay");
-    if(bubble) bubble.textContent = fala;
-    try{ if(window.speechSynthesis){ speechSynthesis.cancel(); speakNow(fala); } }catch(e){}
-    const digits = a.digits||5;
-    const html = "<div class='sig "+(dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · M1</div><div style='font-size:22px;text-align:center;margin:4px 0'><b>"+nome+"</b></div><div class='muted' style='text-align:center'>"+sname+"</div><div class='bigdir "+(dir==="CALL"?"up":"down")+"'>"+(dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+Number(px).toFixed(digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>Mesma vela</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>00:55</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>00:55</b></div></div></div>";
-    area.innerHTML = html;
-    ST._entryOpen = true;
-    ST._holdUntil = Date.now() + 60000;
-    ST._holdHtml = html;
-    if(ST._clockT) clearInterval(ST._clockT);
-    let left = 55;
-    ST._clockT = setInterval(()=>{
-      left = Math.max(0, left-1);
-      const clk = document.getElementById("velaClock");
-      const lf = document.getElementById("left");
-      const txt = "00:"+String(left).padStart(2,"0");
-      if(clk) clk.textContent = txt;
-      if(lf) lf.textContent = txt;
-      if(left<=0){ clearInterval(ST._clockT); ST._clockT=null; }
-    }, 1000);
+    // scan up to 6 pairs looking for a real pattern
+    for(let k=0;k<6;k++){
+      ST._forceIdx = (ST._forceIdx||0) + 1;
+      const a = list[ST._forceIdx % list.length];
+      let bars = null;
+      try{
+        bars = await Promise.race([
+          candles(a.id, 60),
+          new Promise(r=>setTimeout(()=>r(null), 2500))
+        ]);
+      }catch(e){ bars = null; }
+      if(!bars || bars.length < 6) continue;
+      const last = bars[bars.length-1];
+      const prev = bars[bars.length-2];
+      const p2 = bars[bars.length-3];
+      // detect real patterns
+      let dir=null, sname=null, why=null;
+      // engolfo
+      const aT=Math.max(prev.o,prev.c), aB=Math.min(prev.o,prev.c);
+      const bT=Math.max(last.o,last.c), bB=Math.min(last.o,last.c);
+      if(prev.c<prev.o && last.c>last.o && bB<=aB && bT>=aT){ dir="CALL"; sname="Engolfo de alta"; why="Engolfo de alta no gráfico."; }
+      else if(prev.c>prev.o && last.c<last.o && bB<=aB && bT>=aT){ dir="PUT"; sname="Engolfo de baixa"; why="Engolfo de baixa no gráfico."; }
+      // 3 soldados / corvos
+      if(!dir && p2 && last.c>last.o && prev.c>prev.o && p2.c>p2.o && last.c>prev.c && prev.c>p2.c){ dir="CALL"; sname="3 soldados"; why="Três verdes fechando mais alto."; }
+      if(!dir && p2 && last.c<last.o && prev.c<prev.o && p2.c<p2.o && last.c<prev.c && prev.c<p2.c){ dir="PUT"; sname="3 corvos"; why="Três vermelhas fechando mais baixo."; }
+      // martelo / estrela
+      const rng = Math.max(last.h-last.l,1e-12);
+      const body = Math.abs(last.c-last.o);
+      const lower = Math.min(last.o,last.c)-last.l;
+      const upper = last.h-Math.max(last.o,last.c);
+      if(!dir && lower>body*2 && upper<body*0.5 && last.c>last.o){ dir="CALL"; sname="Martelo"; why="Martelo de reversão."; }
+      if(!dir && upper>body*2 && lower<body*0.5 && last.c<last.o){ dir="PUT"; sname="Estrela cadente"; why="Estrela cadente."; }
+      // suporte / resistência simples
+      const box = bars.slice(-15,-1);
+      if(box.length>5){
+        const bh = Math.max.apply(null, box.map(b=>b.h));
+        const bl = Math.min.apply(null, box.map(b=>b.l));
+        if(!dir && last.l<=bl*1.001 && last.c>last.o){ dir="CALL"; sname="Suporte"; why="Tocou no suporte e reverteu."; }
+        if(!dir && last.h>=bh*0.999 && last.c<last.o){ dir="PUT"; sname="Resistência"; why="Tocou na resistência e reverteu."; }
+      }
+      if(!dir) continue; // no clear pattern, try next pair
+      // found one
+      const nome = a.name||a.ticker||"PAR";
+      const fala = (dir==="CALL"?"Compra":"Venda")+". "+nome.replace("/"," ")+". "+sname+". Mesma vela.";
+      const bubble = document.getElementById("roboSay");
+      if(bubble) bubble.textContent = fala;
+      try{ if(window.speechSynthesis){ speechSynthesis.cancel(); speakNow(fala); } }catch(e){}
+      const digits = a.digits||5;
+      const px = last.c;
+      const html = "<div class='sig "+(dir==="CALL"?"call":"")+"'><div class='muted' style='text-align:center'>ENTRADA ATUAL · M1</div><div style='font-size:22px;text-align:center;margin:4px 0'><b>"+nome+"</b></div><div class='muted' style='text-align:center'>"+sname+"</div><div class='bigdir "+(dir==="CALL"?"up":"down")+"'>"+(dir==="CALL"?"▲ CALL":"▼ PUT")+"</div><div class='box'><span>ENTRADA</span><b>"+Number(px).toFixed(digits)+"</b></div><div class='box'><span>EXPIRAÇÃO AUTOMÁTICA</span><b>Mesma vela</b></div><div style='display:flex;gap:6px'><div class='box' style='flex:1'><span>VELA</span><b id='velaClock'>00:55</b></div><div class='box' style='flex:1'><span>FECHA</span><b id='left'>00:55</b></div></div><p class='muted'>"+why+"</p></div>";
+      area.innerHTML = html;
+      ST._entryOpen = true;
+      ST._holdUntil = Date.now() + 60000;
+      ST._holdHtml = html;
+      if(ST._clockT) clearInterval(ST._clockT);
+      let left = 55;
+      ST._clockT = setInterval(()=>{
+        left = Math.max(0, left-1);
+        const clk = document.getElementById("velaClock");
+        const lf = document.getElementById("left");
+        const txt = "00:"+String(left).padStart(2,"0");
+        if(clk) clk.textContent = txt;
+        if(lf) lf.textContent = txt;
+        if(left<=0){ clearInterval(ST._clockT); ST._clockT=null; }
+      }, 1000);
+      if(ST._forceT) clearTimeout(ST._forceT);
+      ST._forceT = setTimeout(forceEntryNow, 60000);
+      return;
+    }
+    // nothing clear found, try again in 8s
     if(ST._forceT) clearTimeout(ST._forceT);
-    ST._forceT = setTimeout(forceEntryNow, 60000);
-  }catch(e){ console.log("force err", e); }
+    ST._forceT = setTimeout(forceEntryNow, 8000);
+  }catch(e){ console.log("force err", e); setTimeout(forceEntryNow, 10000); }
 }
 
 function sinais(){
