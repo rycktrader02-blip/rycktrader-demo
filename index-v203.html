@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>RyckTrader v203</title>
+</head>
+<body>
+<script>
+window.addEventListener("message", function(ev){
+  if(!ev.data || ev.data.type !== "vex") return;
+  ST = ST || {};
+  ST._brokerPair = ev.data.pair;
+  ST._brokerPrice = Number(ev.data.price);
+  ST._brokerTs = Date.now();
+});
+</script>
+<p>v203 carregando...</p>
+</body>
+</html>
