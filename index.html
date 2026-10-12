@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v193</title>
+<title>RyckTrader v194</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v193</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v194</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3504,7 +3504,11 @@ async function runSig(){
     if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700);
     return;
   }
-  const holdMs=60000; ST._nextAt=Date.now()+holdMs; ST._pinAsset="";
+  const tfSec=60;
+  const nowSec=Math.floor(Date.now()/1000);
+  const candleEnd=(Math.floor(nowSec/tfSec)+1)*tfSec;
+  ST._nextAt=candleEnd*1000;
+  ST._pinAsset="";
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._lastShown=best.a.id;
@@ -3548,7 +3552,13 @@ async function runSig(){
   ST._pinAsset=best.a.id;
   if(ST._freezeT) clearInterval(ST._freezeT);
   ST._freezeT=setInterval(()=>{
-    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ clearInterval(ST._freezeT); ST._freezeT=null; ST._entryOpen=false; ST._nextAt=0; ST._holdUntil=0; ST._scanLock=0; ST._holdHtml=""; try{ runSig(); }catch(e){} return; }
+    if(!ST._entryOpen || Date.now()>=ST._holdUntil){ 
+      clearInterval(ST._freezeT); ST._freezeT=null; ST._entryOpen=false; ST._nextAt=0; ST._holdUntil=0; ST._scanLock=0; ST._holdHtml="";
+      const sa=document.getElementById("sigArea");
+      if(sa) sa.innerHTML="<div class='muted'>SEM ENTRADA</div><p class='muted'>Buscando a próxima...</p>";
+      setTimeout(()=>{ try{ runSig(); }catch(e){} }, 800);
+      return; 
+    }
     const box=document.getElementById("sigArea");
     if(box && ST._freezeHtml && !box.querySelector("#velaClock")) box.innerHTML=ST._freezeHtml;
     const say=document.getElementById("roboSay");
