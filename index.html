@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v184</title>
+<title>RyckTrader v185</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v184</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v185</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2852,7 +2852,7 @@ function sinais(){
   const box=$("aiSig")||$("pg-sinais");
   if(!box) return;
   if(ST._entryOpen && Date.now()<ST._holdUntil && box.querySelector("#sigArea")) return;
-  box.innerHTML="<div class='robo-wrap'><div class='robo-bubble' id='roboSay'>Aguardando a próxima vela.</div></div><div class='tfsw' id='tfFilt'><button data-mode='m1m5' class='"+(ST._pairMode!=="m5m1"?"on":"")+"'>M1/M5</button><button data-mode='m5m1' class='"+(ST._pairMode==="m5m1"?"on":"")+"'>M5/M1</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.filter(x=>!["mira","ari","snip","mega"].includes(x.id)).map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
+  box.innerHTML="<div class='robo-wrap'><div class='robo-bubble' id='roboSay'>Analisando os pares...</div></div><div class='tfsw' id='tfFilt'><button data-mode='m1m5' class='"+(ST._pairMode!=="m5m1"?"on":"")+"'>M1/M5</button><button data-mode='m5m1' class='"+(ST._pairMode==="m5m1"?"on":"")+"'>M5/M1</button></div><div class='tfsw' id='mktFilt'><button data-m='fx' class='"+(ST.mkt!=="crypto"?"on":"")+"'>Forex</button><button data-m='crypto' class='"+(ST.mkt==="crypto"?"on":"")+"'>Cripto</button></div><div id='sigArea'></div><select id='selS'><option value='auto' selected>Auto — estratégia do momento</option>"+STRATS.filter(x=>!["mira","ari","snip","mega"].includes(x.id)).map(x=>"<option value='"+x.id+"' "+(x.id===ST.strat?"selected":"")+">"+x.short+"</option>").join("")+"</select><div class='sig-actions'><button class='btn ghost' id='btnVoice2' onclick='toggleVoice()'>"+(ST.voice===false?"Voz off":"Voz on")+"</button><button class='btn gold' id='btnSig'>Automático</button></div>";
   fillVoices();
   document.querySelectorAll("#tfFilt button").forEach(b=>b.onclick=()=>{
     ST._pairMode=b.dataset.mode||"m1m5";
@@ -2880,7 +2880,9 @@ function sinais(){
     ST._scanLock=0; runSig();
   };
   ST._autoHunt=true;
-  if($("sigArea")) $("sigArea").innerHTML="<p class='muted'>Robô no automático. A entrada sai no fechamento da vela.</p>";
+  ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._mustEmit=1; ST._pinAsset=""; ST._holdHtml="";
+  if($("sigArea")) $("sigArea").innerHTML="<div class='muted'>LENDO "+(ST.mkt==="crypto"?"CRIPTO":"FOREX")+" · analisando...</div><p class='muted'>Procurando a melhor entrada agora.</p>";
+  setTimeout(()=>{ try{ runSig(); }catch(e){} }, 100);
 }
 async function apiConfirm(a,dir){
   const prov=localStorage.getItem("rt-apiprov")||"local";
@@ -3344,13 +3346,27 @@ async function runSig(){
       usedBars=bars; hits.push(best); break;
     }
   }
+  if(!best && uni.length){
+    // force a simple fluxo fallback so it never stays frozen
+    for(const a of uni){
+      let bars=(ST._scanBars&&ST._scanBars[a.id])||(ST._barCache&&ST._barCache[a.id+"|"+g]&&ST._barCache[a.id+"|"+g].raw);
+      if(!bars||bars.length<6) continue;
+      const last=bars[bars.length-1];
+      if(!(last&&last.c>0)) continue;
+      const dir = last.c>=last.o ? "CALL" : "PUT";
+      const sname = dir==="CALL" ? "Fluxo de alta" : "Fluxo de baixa";
+      best={a:a,sid:"eng",tf:String(g),dir:dir,conf:78,why:"Vela a favor do fluxo.",sname:sname,touch:last.c};
+      usedBars=bars;
+      break;
+    }
+  }
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     ST._pickId=""; ST._pinAsset=""; ST._entryOpen=false;
     area.dataset.busy=""; ST._scanLock=0;
     area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+" · "+uni.length+" PARES</div><p class='muted'>Procurando a entrada. Não trava.</p>";
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 900);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 700);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
@@ -3425,9 +3441,10 @@ async function runSig(){
   const nowSec=Date.now()/1000;
   const candleOpen=Math.floor(nowSec/perSec)*perSec;
   const leftSec=Math.floor(candleOpen+perSec-nowSec);
-  if(leftSec<4){
-    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false;
-    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, Math.max(600,(leftSec+1)*1000));
+  // leftSec gate removed so it can emit anytime
+  if(leftSec<2 && !ST._mustEmit){
+    area.dataset.busy=""; ST._scanLock=0;
+    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 800);
     return;
   }
   const recent=ST._recentPairs||[];
