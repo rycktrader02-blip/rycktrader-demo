@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v186</title>
+<title>RyckTrader v185</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -766,7 +766,20 @@ html.embed #tvWrap iframe{
 }
 a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!important;visibility:hidden!important;height:0!important;width:0!important;overflow:hidden!important;pointer-events:none!important}
 </style>
-<script>if(/\bembed=1\b/.test(location.search)||location.protocol==="chrome-extension:")document.documentElement.classList.add("embed");</script>
+<script>if(/\bembed=1\b/.test(location.search)||location.protocol==="chrome-extension:")document.documentElement.classList.add("embed");
+// force entry every 60s when in sinais auto mode
+if(!window._forceEntryTimer){
+  window._forceEntryTimer = setInterval(()=>{
+    try{
+      if(ST.panelTab!=="sinais") return;
+      if(ST._entryOpen && ST._holdUntil && Date.now()<ST._holdUntil) return;
+      ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._mustEmit=1; ST._holdHtml="";
+      runSig();
+    }catch(e){}
+  }, 60000);
+}
+
+</script>
 </head>
 <body>
 <div id="aiDragMask"></div>
@@ -780,7 +793,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v186</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v185</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -3469,10 +3482,7 @@ async function runSig(){
     if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 700);
     return;
   }
-  // hold fixo de 60 segundos para próxima entrada
-  const holdMs = 60000;
-  ST._nextAt = Date.now() + holdMs;
-  ST._pinAsset="";
+  const holdMs=60000; ST._nextAt=Date.now()+holdMs; ST._pinAsset="";
   ST._entryOpen=true;
   ST._holdUntil=ST._nextAt;
   ST._lastShown=best.a.id;
@@ -4933,6 +4943,19 @@ if(document.documentElement.classList.contains("embed")){
   setInterval(zap,400);
   try{new MutationObserver(zap).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
 })();
+
+// force entry every 60s when in sinais auto mode
+if(!window._forceEntryTimer){
+  window._forceEntryTimer = setInterval(()=>{
+    try{
+      if(ST.panelTab!=="sinais") return;
+      if(ST._entryOpen && ST._holdUntil && Date.now()<ST._holdUntil) return;
+      ST._scanLock=0; ST._nextAt=0; ST._holdUntil=0; ST._entryOpen=false; ST._mustEmit=1; ST._holdHtml="";
+      runSig();
+    }catch(e){}
+  }, 60000);
+}
+
 </script>
 </body>
 </html>
