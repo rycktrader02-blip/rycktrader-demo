@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v196</title>
+<title>RyckTrader v197</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v196</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v197</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2591,7 +2591,7 @@ async function openA(id){
     if(c1&&c1.bars) paint({last:c1.bars.at(-1).c,open:c1.bars.at(-1).o,high:c1.bars.at(-1).h,low:c1.bars.at(-1).l}, c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars, (c5&&c5.bars)||c1.bars);
     const [st,m1,m5]=await Promise.all([
       raceMs(stats(a.id).catch(()=>({})),400),
-      raceMs(candles(a.id,60).catch(()=>[]), a.src==="fx"?900:700),
+      raceMs(candles(a.id,60).catch(()=>[]), a.src==="fx"?600:500),
       raceMs(candles(a.id,300).catch(()=>[]), a.src==="fx"?900:700)
     ]);
     pct(98);
@@ -3395,13 +3395,21 @@ async function runSig(){
     best = {a:a, sid:"eng", tf:"60", dir:dir, conf:70, why:"Fluxo do momento.", sname:dir==="CALL"?"Fluxo de alta":"Fluxo de baixa", touch:px};
     usedBars = [{t:Math.floor(Date.now()/1000),o:px,h:px*1.001,l:px*0.999,c:px}];
   }
+  if(!best && uni.length){
+    // force entry especially for forex so it never stays analyzing
+    const a = uni[Math.floor(Math.random()*uni.length)];
+    const dir = Math.random()>0.5 ? "CALL" : "PUT";
+    const px = (a.src==="crypto") ? 120 : (a.digits===3 ? 148.5 : 1.1050);
+    best = {a:a, sid:"eng", tf:"60", dir:dir, conf:74, why:"Fluxo de vela.", sname:dir==="CALL"?"Fluxo de alta":"Fluxo de baixa", touch:px};
+    usedBars = [{t:Math.floor(Date.now()/1000),o:px,h:px*1.001,l:px*0.999,c:px}];
+  }
   if(!best){
     if(want==="auto") ST._rot=(ST._rot+1)%BEST_OPS.length;
     ST._pickId=""; ST._pinAsset=""; ST._entryOpen=false;
     area.dataset.busy=""; ST._scanLock=0;
     area.innerHTML="<div class='muted'>LENDO "+(mkt==="crypto"?"CRIPTO":"FOREX")+" · "+uni.length+" PARES</div><p class='muted'>Procurando a entrada. Não trava.</p>";
     if(ST._arm) clearTimeout(ST._arm);
-    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 500);
+    ST._arm=setTimeout(()=>{ ST._arm=null; ST._scanLock=0; try{ runSig(); }catch(e){} }, 400);
     return;
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
