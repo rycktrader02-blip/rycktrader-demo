@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v177</title>
+<title>RyckTrader v178</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v177</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v178</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -2762,22 +2762,21 @@ function showPanelTab(tab){
   ST.panelTab=tab==="sinais"?"sinais":"ativos";
   const p=$("aiPanel"); if(p) p.classList.remove("hidden");
   const fab=$("aiFab"); if(fab) fab.classList.remove("show");
-  deskCloseDrawer();
+  try{ deskCloseDrawer(); }catch(e){}
   const list=$("aiList"), sig=$("aiSig"), tf=$("aiTf"), mkt=$("aiMkt");
   const onSig=ST.panelTab==="sinais";
   ST._pickId="";
+  ST._viewA=null;
   if(onSig){
-    ST._viewA=null;
     ST._assetOnly="";
     ST._anaLock="";
-    if(list) list.innerHTML="";
   } else {
     ST._scanLock=0;
     ST._nextAt=0;
     ST._entryOpen=false;
     ST._pinAsset="";
+    ST._holdUntil=0;
     ST._deskHtmlKey="";
-    deskRender();
   }
   if(list) list.style.display=onSig?"none":"block";
   if(sig) sig.style.display=onSig?"block":"none";
@@ -2787,7 +2786,6 @@ function showPanelTab(tab){
   document.querySelectorAll("#aiTabs button").forEach(b=>b.classList.toggle("on",b.getAttribute("data-tab")===ST.panelTab));
   const q=$("aiQ"); if(q) q.style.display=onSig?"none":"block";
   if(onSig){
-    ST._viewA=null;
     ST.voice=true;
     ST._autoHunt=true;
     if(ST.mkt!=="crypto") ST.mkt="fx";
@@ -2795,10 +2793,10 @@ function showPanelTab(tab){
     sinais();
     setTimeout(()=>{ try{ runSig(); }catch(e){} }, 250);
   } else {
-    ST._viewA=null;
-    ST._scanLock=0;
+    try{ seedLocalQuotes(); }catch(e){}
     ST._deskHtmlKey="";
     deskRender();
+    try{ deskQuotes(); }catch(e){}
   }
 }
 function sinais(){
@@ -3903,8 +3901,14 @@ function deskPatchQuotes(){
 }
 function deskRender(){
   if(ST._viewA) return;
+  if(ST.panelTab==="sinais") return;
   const box=$("aiList"); if(!box) return;
+  box.style.display="block";
   const rows=deskPairs();
+  if(!rows.length){
+    box.innerHTML="<div class='ai-sec'>SEM PARES</div>";
+    return;
+  }
   const key=rows.map(a=>a.id).join(",")+"|"+(ST.tf||"60")+"|"+(ST.deskMkt||"all");
   if(ST._deskHtmlKey===key && box.querySelector(".ai-row")){
     deskPatchQuotes();
@@ -3950,11 +3954,14 @@ function seedLocalQuotes(){
   ST._deskPx=ST._deskPx||{};
   ASSETS.forEach(a=>{
     const cur=ST._deskPx[a.id];
-    if(cur && cur.last>0) return;
-    return;
-    const bars=synthBars(a.id, +ST.tf||60, 48);
-    const last=bars.at(-1).c, prev=bars[Math.max(0,bars.length-24)].c;
-    ST._deskPx[a.id]={last,chg:prev?((last-prev)/prev)*100:0,local:1};
+    if(cur && cur.last>0 && !cur.local) return;
+    try{
+      const bars=synthBars(a.id, +ST.tf||60, 48);
+      if(!bars||!bars.length) return;
+      const last=bars.at(-1).c, prev=bars[Math.max(0,bars.length-24)].c;
+      if(!(last>0)) return;
+      if(!cur || !cur.last || cur.local) ST._deskPx[a.id]={last,chg:prev?((last-prev)/prev)*100:0,local:1};
+    }catch(e){}
   });
 }
 async function deskQuotes(){
