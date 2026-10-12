@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v195</title>
+<title>RyckTrader v196</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,7 +794,7 @@ if(!window._forceEntryTimer){
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v195</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v196</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -4063,6 +4063,7 @@ function deskRender(){
   if(ST.panelTab==="sinais") return;
   const box=$("aiList"); if(!box) return;
   box.style.display="block";
+  if(!ASSETS||!ASSETS.length){ box.innerHTML="<div class='ai-sec'>SEM PARES</div>"; return; }
   // listas separadas: FOREX e CRIPTO
   const fxRows=ASSETS.filter(a=>a.src==="fx");
   const crRows=ASSETS.filter(a=>a.src==="crypto");
