@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
-<title>RyckTrader v182</title>
+<title>RyckTrader v183</title>
 <link rel="preconnect" href="https://ws.binaryws.com" crossorigin>
 <link rel="preconnect" href="https://economia.awesomeapi.com.br" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -780,7 +780,7 @@ a[href*="tiiny.host"],a[href*="tiiny.site"],img[src*="tiiny.host"]{display:none!
   <div id="aiPanel" class="docked">
     <div class="ai-head" id="aiDrag">
       <img class="ai-robo" id="aiRobo" alt="Ryck" width="28" height="28"/>
-      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v182</span>
+      <b id="aiTitle">ATIVOS</b><span id="rtVer" style="margin-left:6px;font:700 10px Inter,sans-serif;color:#7dd3fc;letter-spacing:.04em">v183</span>
       <div class="ai-tools">
         <button type="button" class="ai-grip" id="aiMove" title="Arrastar painel">⠿</button>
         <button type="button" title="Minimizar" onclick="deskMin()">–</button>
@@ -1215,6 +1215,7 @@ async function candles(id,g){
     }
   }
   if(!bars||!bars.length){
+    if(ST._forceRealFeed) return [];
     bars=synthBars(id, +g||60, 80);
     ST.feedName="Local";
   }
@@ -3330,7 +3331,6 @@ async function runSig(){
     for(const a of uni){
       if(a.id===ST._lastShown) continue;
       let bars=(ST._scanBars&&ST._scanBars[a.id])||(ST._barCache&&ST._barCache[a.id+"|"+g]&&ST._barCache[a.id+"|"+g].raw);
-      if(!bars||bars.length<8) bars=synthBars(a.id, g, 40);
       if(!bars||bars.length<8) continue;
       const last=bars[bars.length-1];
       if(!(last&&last.c>0)) continue;
@@ -3355,8 +3355,29 @@ async function runSig(){
   }
   const livePx=+(usedBars&&usedBars.at(-1)&&usedBars.at(-1).c)||0;
   const nm=String(best.a&&best.a.name||"");
-  const bandOk=(nm==="NZD/USD"?livePx>0.4&&livePx<0.85:nm==="EUR/USD"?livePx>0.9&&livePx<1.35:nm==="GBP/USD"?livePx>1.05&&livePx<1.55:/JPY$/.test(nm)?livePx>50:nm==="Ethereum"?livePx>100:nm==="XRP"?livePx>0.2&&livePx<8:livePx>0);
-  if(!bandOk){ livePx=best.touch||livePx; }
+  const band=(
+    nm==="EUR/USD"?[0.95,1.25]:
+    nm==="GBP/USD"?[1.10,1.50]:
+    nm==="GBP/CAD"?[1.60,2.10]:
+    nm==="GBP/NZD"?[1.90,2.70]:
+    nm==="NZD/CHF"?[0.40,0.70]:
+    nm==="NZD/USD"?[0.45,0.80]:
+    nm==="AUD/USD"?[0.55,0.85]:
+    nm==="USD/CAD"?[1.15,1.55]:
+    nm==="USD/CHF"?[0.70,1.05]:
+    nm==="EUR/GBP"?[0.75,0.98]:
+    /JPY$/.test(nm)?[70,220]:
+    nm==="Bitcoin"?[20000,200000]:
+    nm==="Ethereum"?[500,10000]:
+    nm==="XRP"?[0.2,8]:
+    [0,0]
+  );
+  const bandOk=band[1]>0 && livePx>=band[0] && livePx<=band[1];
+  if(!bandOk){
+    area.dataset.busy=""; ST._scanLock=0; ST._entryOpen=false;
+    if(!ST._arm) ST._arm=setTimeout(()=>{ ST._arm=null; try{ runSig(); }catch(e){} }, 1200);
+    return;
+  }
   if(!(best.touch>0)) best.touch=livePx;
   const vs=volState(usedBars);
   if(false && ST.volOn!==false && !vs.ok){
